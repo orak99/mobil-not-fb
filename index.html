@@ -1,0 +1,3039 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reklam Görevi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- Bebas Neue hem partnerin final seçimi hem billboard görsellerinin fontu.
+     display=block: swap'ta yazı önce yedek fontla çizilip font inince zıplıyor;
+     partner fontu seçtikten sonra bu zıplama önizleme ile basılı billboard
+     arasında tutarsızlık yaratır.
+     Türkçe slogan İKİ altküme gerektiriyor — ı (U+0131) latin'de, ğ ş İ
+     latin-ext'te — bu yüzden ikisi de önden indiriliyor.
+     NOT: adresler sürüm içerir (v16). Font artık preload edilmiyor uyarısı
+     görürseniz Google Fonts CSS'inden güncel adresleri alın. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXoo9Wdhyzbi.woff2">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=block" rel="stylesheet">
+
+<!-- Arayüz fontları: swap yeterli, geç gelseler bir şey bozulmaz.
+     Merriweather kaldırıldı (hiç kullanılmıyordu), Playfair 7 ağırlıktan
+     kullanılan 3'e indirildi. -->
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+    --bg:#FAFAF8;--bg2:#FFFFFF;--bg3:#F3F1EE;--border:#E5E0D8;
+    --text:#141414;--text2:#333333;--text3:#6B6B6B;
+    --accent:#4A7CC9;--accent2:#7BA3DB;--accent-light:#EBF1FA;
+    --green:#3B8C5E;--purple:#7B5EA7;--red:#C45B4A;--r:8px;
+    /* Tasarım hedefi 375–430px. Tek sütun; masaüstünde ortalanır. */
+    --col:480px;
+    /* Sabit alt butonun kapladığı yer — ekranların alt boşluğu bu kadar açılır */
+    --cta-space:76px;
+}
+/* overflow-x html'de: body'de olsaydı body kaydırma kutusuna dönüşüp
+   position:sticky'yi bazı tarayıcılarda bozardı. */
+html{overflow-x:hidden}
+/* Sayfa gizliyken animasyonlar dursun: arka planda dönen spinner ve
+   nabız pil tüketiyor, geri dönüşte de zincirle uyumsuz görünüyor. */
+body.is-hidden *,body.is-hidden *::before,body.is-hidden *::after{animation-play-state:paused !important}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh}
+/* 100dvh: mobil tarayıcı çubukları 100vh'yi bozuyor.
+   justify-content:center güvenli — .screen kaydırma kutusu değil, sayfa
+   kayıyor; içerik taşınca kutu büyüyor, tepesi kırpılmıyor. */
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100dvh;gap:18px;
+    padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.screen.active{display:flex}
+/* Tek sütun: içerik blokları sütun genişliğini aşmaz */
+.screen > *{max-width:var(--col);width:100%}
+.screen > .btn,.screen > h1{width:auto}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn{padding:12px 28px;min-height:48px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;transition:0.3s;letter-spacing:0.5px;font-family:inherit}
+.btn:hover:not(:disabled){background:#3A6AB5;transform:translateY(-1px)}
+.btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn-sm{padding:10px 20px;min-height:44px;font-size:14px}
+
+/* ── Sabit alt eylem butonu ──
+   Birincil eylem uzun ekranlarda da başparmak erişiminde kalsın.
+   Sticky tutmazsa buton normal akışta en altta kalır — bozulma olmaz. */
+.screen > .btn,
+#demoSubmit,#npiSubmit,#mcheckSubmit,#surveySubmit{
+    position:sticky;
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    z-index:20;
+    align-self:center;
+    box-shadow:0 6px 20px rgba(0,0,0,0.18);
+}
+/* Sabit buton son içeriğin üstünü kapatmasın */
+#consentScreen,#demoScreen,#introScreen,#briefScreen,#instrScreen,
+#sloganScreen,#partnerWaitScreen,#preFeedbackScreen,
+#surveyScreen,#npiScreen,#mcheckScreen{
+    padding-bottom:calc(var(--cta-space) + env(safe-area-inset-bottom,0px))
+}
+.btn-outline{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+.btn-outline:hover:not(:disabled){background:var(--accent-light)}
+.btn-danger{background:var(--red)}
+.btn-danger:hover:not(:disabled){background:#A84736}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 18px;max-width:var(--col);width:100%;box-shadow:0 1px 6px rgba(0,0,0,0.04)}
+.card h2{font-size:20px;font-weight:700;margin-bottom:14px;font-family:Georgia,serif}
+.card p{font-size:14px;line-height:1.75;color:var(--text2);margin-bottom:12px}
+.card .highlight{background:var(--accent-light);border-left:3px solid var(--accent2);padding:12px 16px;border-radius:0 6px 6px 0;margin:14px 0;font-size:13px;line-height:1.7;color:var(--text)}
+
+.brand-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;font-size:13px;line-height:1.7;color:var(--text2)}
+/* Etiket ve değer yan yanayken dar ekranda değer sütuna sıkışıyordu;
+   etiket üstte, bilgi altında. */
+.brand-box .row{display:block;margin-bottom:10px}
+.brand-box .row:last-child{margin-bottom:0}
+.brand-box .row b{display:block;color:var(--text);font-weight:700;margin-bottom:1px}
+.brand-box .row span{display:block;color:var(--text2)}
+
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* Uzun metin blokları iki yana yaslı. Dar sütunda nehir oluşmasın diye
+   heceleme açık; sayfa lang="tr" olduğu için tarayıcı Türkçe heceliyor. */
+#consentScreen .card p,#introScreen .card p,#briefScreen .card p,
+#instrScreen .card p,#partnerWaitScreen .card p,#debriefScreen .card p,
+.inapp-steps li{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+#consentScreen .card{text-align:left}
+#consentScreen .card p{font-size:14px;line-height:1.85;color:var(--text)}
+
+#matchScreen .spinner{width:44px;height:44px;border-width:3px}
+.match-text{font-size:19px;color:var(--text2);margin-top:12px}
+.match-sub{font-size:14px;color:var(--text3);text-align:center;line-height:1.8;opacity:0;transition:opacity 0.5s}
+.match-sub.show{opacity:1}
+.match-bar-wrap{width:100%;height:5px;background:var(--bg3);border-radius:2px;overflow:hidden;display:none}
+.match-bar-wrap.show{display:block}
+.match-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 0.6s ease}
+.match-pct{font-size:16px;color:var(--accent);font-weight:600;display:none}
+.match-pct.show{display:block}
+.match-card{background:var(--bg2);border:1px solid var(--purple);border-radius:var(--r);padding:22px 44px;text-align:center;opacity:0;transition:opacity 0.5s;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.match-card.show{opacity:1}
+.match-card .name{font-size:20px;font-weight:600;color:var(--purple)}
+.match-card .label{font-size:13px;color:var(--text3);margin-top:4px}
+
+.slogan-wrap{max-width:var(--col);width:100%;display:flex;flex-direction:column;gap:14px}
+.slogan-title{font-size:18px;font-family:Georgia,serif;font-weight:700}
+.slogan-sub{font-size:12px;color:var(--text3);margin-top:-10px;margin-bottom:4px}
+.slogan-label{font-size:14px;color:var(--text);font-weight:600;display:block;margin-bottom:6px}
+#sloganText{width:100%;min-height:90px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;font-size:18px;font-family:Georgia,serif;resize:none;line-height:1.5;color:var(--text)}
+#sloganText:focus{outline:none;border-color:var(--accent)}
+.slogan-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:6px}
+.slogan-meta .ok{color:var(--green);font-weight:600}
+.slogan-meta .bad{color:var(--red)}
+
+/* ── Kelime kartı arayüzü ── */
+.kelime-strip-wrap{display:flex;flex-direction:column;gap:8px}
+#sloganPreview{margin-top:0}
+#sloganPreview.empty{color:var(--text3);font-weight:400;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;letter-spacing:0}
+.strip-actions{display:flex;gap:8px;justify-content:flex-end}
+.kelime-pool-title{font-size:11px;color:#000;text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-top:6px}
+.kelime-groups{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kelime-group{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px}
+.kelime-group h5{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:0.3px}
+.kelime-group .gh-sub{font-size:11px;color:var(--text3);margin:2px 0 10px;line-height:1.4}
+.opt-badge{display:inline-block;background:var(--accent-light);color:var(--accent);border:1px solid var(--accent2);border-radius:10px;padding:1px 8px;font-size:10px;font-weight:700;letter-spacing:0.3px;margin-left:4px;text-transform:none}
+.kelime-cards{display:flex;flex-wrap:wrap;gap:6px}
+.kelime-card{font-family:'Playfair Display',Georgia,serif;font-size:16px;color:#1c2433;background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:12px 16px;min-height:44px;cursor:pointer;transition:all 0.18s;line-height:1.2}
+.kelime-card:hover:not(.picked){border-color:var(--accent2);background:var(--accent-light);transform:translateY(-1px)}
+.kelime-card.picked{border-color:var(--green);background:rgba(59,140,94,0.10);color:var(--green);box-shadow:0 1px 6px rgba(59,140,94,0.18);font-weight:600}
+.kelime-hint{font-size:13px;color:var(--text2);line-height:1.5;padding:6px 2px}
+/* Önizleme: ikinci kelimeler ilk seçimden ÖNCE de görünür ki katılımcı
+   çiftini planlayabilsin. Seçilemez; kesik çerçeve "henüz aktif değil"
+   anlatır — soluk göstermek "kullanılamaz" gibi okunuyordu. */
+.kelime-card--preview{background:transparent;border-style:dashed;color:var(--text2);
+    pointer-events:none}
+
+/* ── Marka bilgileri: butondan açılan tam ekran katman ── */
+.brand-info-btn{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+    min-height:60px;padding:12px 16px;background:var(--accent-light);
+    border:1.5px solid var(--accent2);border-radius:var(--r);color:var(--text);
+    font-family:inherit;cursor:pointer;transition:0.18s;text-align:left}
+.brand-info-btn .bi-main{font-size:15px;font-weight:700;display:block}
+.brand-info-btn .bi-sub{font-size:12px;font-weight:400;color:var(--text2);display:block;margin-top:2px}
+.brand-info-btn:hover{border-color:var(--accent2);background:var(--accent-light)}
+.brand-info-btn span:last-child{font-size:20px;color:var(--text3);line-height:1}
+.brand-info-sheet{background:#fff;border-radius:14px;width:100%;max-width:var(--col);
+    max-height:88dvh;display:flex;flex-direction:column;gap:12px;padding:16px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:popIn 0.3s ease}
+.brand-info-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand-info-head h3{font-family:Georgia,serif;font-size:18px}
+.brand-info-close{width:44px;height:44px;flex-shrink:0;background:transparent;border:none;
+    font-size:20px;color:var(--text2);cursor:pointer;border-radius:8px;font-family:inherit}
+.brand-info-close:hover{background:var(--bg3)}
+.brand-info-body{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+.brand-info-sheet > .btn{align-self:stretch}
+.kelime-cards.reveal{animation:fadeIn 0.3s ease}
+@media(max-width:640px){.kelime-groups{grid-template-columns:1fr}}
+
+/* Onboard — slogan ekranı tanıtımı */
+.onboard-card{background:#fff;border-radius:14px;padding:24px 20px;max-width:var(--col);max-height:86dvh;overflow-y:auto;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:popIn 0.4s ease;display:flex;flex-direction:column;gap:14px}
+.onboard-card h3{font-family:Georgia,serif;font-size:19px;color:var(--text)}
+.onboard-card ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--text2);line-height:1.55}
+.onboard-card ol b{color:var(--text)}
+.onboard-ex{background:var(--bg3);border-radius:8px;padding:12px 14px;text-align:center}
+.onboard-ex .ex-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px}
+.onboard-ex .ex-slogan{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:20px;color:#1c2433}
+.onboard-note{font-size:12px;color:var(--text3);line-height:1.6}
+.onboard-card .btn{align-self:center;margin-top:2px}
+
+/* Partner popup — beyaz/blurlu arkaplan */
+.popup-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.55);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:16px calc(12px + env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.popup-overlay.show{display:flex;flex-direction:column;gap:14px}
+
+/* New control panel styles */
+.font-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.font-opt{padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:4px;font-size:12px;cursor:default;transition:all 0.2s}
+.font-opt.hover{border-color:var(--purple);background:rgba(123,94,167,0.06)}
+.font-opt.picked{border-color:var(--green);background:rgba(59,140,94,0.08);color:var(--green);font-weight:600}
+.picker-h{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;font-weight:700}
+.size-current{align-self:flex-start;min-width:56px;padding:4px 10px;background:#fff;border:1.5px solid var(--border);border-radius:4px;font-family:'Segoe UI',sans-serif;font-size:12px;font-weight:600;color:var(--text);text-align:center}
+.size-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;background:#fff;border:1px solid var(--border);border-radius:4px;padding:5px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.size-opt{padding:10px 2px;min-height:44px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid transparent;border-radius:3px;font-size:11px;font-family:'Segoe UI',sans-serif;color:var(--text);text-align:center;cursor:default;transition:0.15s;font-weight:500}
+.size-opt.hover{background:#E3F2FD;border-color:#90CAF9}
+.size-opt.picked{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+.font-current{font-size:12px;color:var(--text);font-weight:600;padding:5px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;align-self:flex-start}
+.palette-current{display:flex;align-items:center;gap:6px;padding:4px 6px;background:#fff;border:1.5px solid var(--border);border-radius:4px;align-self:flex-start}
+.pc-swatch{width:16px;height:16px;border-radius:3px;background:#1c2433;border:1px solid rgba(0,0,0,0.15)}
+.pc-hex{font-family:'Consolas','Courier New',monospace;font-size:10px;color:var(--text2);font-weight:600;letter-spacing:0.4px}
+/* minmax(0,1fr) ŞART: düz 1fr kullanılırsa sütunun asgari genişliği
+   hücrenin min-content'inden hesaplanır. .cp-cell'de aspect-ratio:1
+   olduğu için bu asgari değer min-height'ten türetiliyordu; dar
+   ekranda 8 sütun kutuya sığmayıp .collab-ctl'yi sağa taşırıyordu
+   (flex öğesinin min-width'i auto olduğundan daralamıyor). */
+.color-palette{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;background:#fff;border:1px solid var(--border);border-radius:4px;padding:5px;box-shadow:0 2px 8px rgba(0,0,0,0.04);justify-content:start}
+/* Katılımcı bu hücrelere dokunmuyor (partner kontrolü, cursor:default,
+   olay dinleyicisi yok) — 44px dokunma hedefi kuralı burada geçerli
+   değil. Sabit asgari yükseklik yerine kutuya sığmak önemli. */
+.cp-cell{width:100%;aspect-ratio:1;min-width:0;min-height:0;border-radius:2px;border:1px solid rgba(0,0,0,0.08);cursor:default;transition:transform 0.15s,box-shadow 0.15s;position:relative}
+.cp-cell.hover{transform:scale(1.25);box-shadow:0 2px 8px rgba(0,0,0,0.25);z-index:2;border-color:#444}
+.cp-cell.picked{box-shadow:0 0 0 2px var(--accent),0 2px 6px rgba(74,124,201,0.4);z-index:2}
+.slogan-preview{margin-top:auto;padding:16px;border:1px solid var(--border);border-radius:6px;background:#fafafa;text-align:center;font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:18px;color:#1c2433;min-height:56px;display:flex;align-items:center;justify-content:center;line-height:1.2;transition:font-size 0.3s,color 0.3s;letter-spacing:0.3px}
+.bb-mini{position:relative;width:100%;aspect-ratio:1600/893;overflow:hidden;border-radius:8px;background:#0e1626;border:1px solid var(--border);margin:0 auto;box-shadow:0 4px 14px rgba(0,0,0,0.12)}
+.bb-mini img{width:100%;height:100%;object-fit:cover;display:block}
+.bb-mini-text{position:absolute;font-family:'Playfair Display',Georgia,serif;font-weight:900;color:#1c2433;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;letter-spacing:0.3px;padding:2px;mix-blend-mode:multiply;transition:font-size 0.35s,color 0.35s;word-wrap:break-word;overflow:hidden;filter:contrast(1.05)}
+/* ── Ortak çalışma alanı ── */
+.collab-wrap{position:relative;width:100%;max-width:var(--col);display:flex;flex-direction:column;gap:12px}
+/* Flex öğesinin varsayılan min-width'i auto: içerik sığmazsa kutu
+   daralmak yerine taşar. Kontroller her koşulda sütuna sığsın. */
+.collab-wrap>*{min-width:0}
+.collab-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);
+    border:1px solid var(--border);border-radius:var(--r);font-size:13px}
+.collab-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+.collab-name{font-weight:600;color:var(--text)}
+.collab-online{color:var(--text3);font-size:12px}
+.collab-clock{margin-left:auto;font-family:Consolas,monospace;font-size:13px;color:var(--text2)}
+.collab-reconnect{display:none;text-align:center;padding:8px;font-size:12px;color:var(--text3);
+    background:#FFF8E1;border:1px solid var(--border);border-radius:var(--r)}
+.collab-reconnect .reconnect-spinner{display:inline-block;width:12px;height:12px;border:1.5px solid var(--border);
+    border-top-color:var(--text3);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px}
+/* Önizleme + durum metni sayfa kayarken ekranda kalır; kontroller
+   altlarından geçer. Aksi halde partner seçim yaparken önizleme
+   yukarıda kalıyor ve değişiklikler görülmüyordu. */
+.collab-stage{position:sticky;top:0;z-index:6;background:var(--bg);
+    padding:6px 0;display:flex;flex-direction:column;gap:8px;
+    box-shadow:0 8px 12px -10px rgba(0,0,0,0.35)}
+.collab-status{display:flex;align-items:center;gap:8px;min-height:22px;font-size:13px;color:var(--text2);padding:0 2px}
+.collab-typing{display:none;gap:3px}
+.collab-typing.on{display:inline-flex}
+.collab-typing span{width:5px;height:5px;border-radius:50%;background:var(--text3);animation:typingBounce 1.4s infinite ease-in-out}
+.collab-typing span:nth-child(2){animation-delay:0.2s}
+.collab-typing span:nth-child(3){animation-delay:0.4s}
+/* Partnerin üzerinde çalıştığı kontrol: belirgin çerçeve + yumuşak parıltı */
+/* Kontrol ortalanırken sabit önizlemenin altında kalmasın */
+.collab-ctl{scroll-margin-top:var(--stage-h,300px);border:1.5px solid var(--border);border-radius:var(--r);padding:12px;background:var(--bg2);
+    transition:border-color 0.3s,box-shadow 0.3s,background 0.3s}
+.collab-ctl.collab-active{border-color:var(--purple);background:#fff;
+    box-shadow:0 0 0 3px rgba(123,94,167,0.14),0 2px 12px rgba(123,94,167,0.10)}
+.collab-ctl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;
+    font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px}
+.collab-ctl-val{font-size:12px;font-weight:600;color:var(--text);text-transform:none;letter-spacing:0}
+/* Kontrolün sağ üstüne yapışan partner etiketi */
+.collab-badge{position:absolute;left:0;top:0;z-index:30;opacity:0;pointer-events:none;
+    background:var(--purple);color:#fff;font-size:11px;font-weight:600;padding:3px 8px;
+    border-radius:5px;white-space:nowrap;transition:left 0.45s cubic-bezier(0.4,0,0.2,1),
+    top 0.45s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;box-shadow:0 2px 8px rgba(0,0,0,0.18)}
+.collab-badge.on{opacity:1}
+/* Partnerin denediği (henüz seçmediği) seçenek */
+.size-opt.trying,.font-opt.trying{background:#EDE7F6;border-color:var(--purple)}
+.cp-cell.trying{transform:scale(1.25);box-shadow:0 2px 8px rgba(0,0,0,0.25);z-index:2;border-color:#444}
+.collab-done{display:none;text-align:center;padding:12px;font-size:14px;color:var(--green);font-weight:600}
+.collab-done.show{display:block}
+
+.pre-popup{background:#fff;border-radius:14px;padding:28px 22px;display:flex;flex-direction:column;align-items:center;gap:18px;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:popIn 0.4s ease;max-width:420px}
+.pre-popup-text{font-size:15px;color:var(--text);font-weight:600;text-align:center;font-family:Georgia,serif}
+@keyframes popIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.popup-reconnect .reconnect-spinner{display:inline-block;width:12px;height:12px;border:1.5px solid var(--border);border-top-color:var(--text3);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px}
+
+
+/* 3 box yan yana */
+.recall-btn{background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-size:12px;padding:10px 14px;min-height:44px;cursor:pointer;color:var(--text2);text-transform:none;letter-spacing:0;font-weight:500}
+.recall-btn:hover{background:var(--accent-light);border-color:var(--accent2)}
+
+/* Background image swatches inside box 2 */
+
+/* Billboard type icons */
+
+/* Recall popover — küçük marka bilgisi popup */
+
+
+/* Partner aşamasında katılımcı izleyicidir: kaydırma, yakınlaştırma,
+   çift dokunuşla büyütme ve metin seçimi kapalı.
+   overflow:hidden KULLANILMIYOR — partnerFocus() kontrolleri
+   scrollIntoView ile görünür alana getiriyor ve o da belge
+   kaydırmasına ihtiyaç duyuyor. Kapatılsaydı partner renk ve yazı
+   tipi seçerken katılımcı hiçbirini göremezdi. Bu yüzden yalnız
+   KULLANICI hareketleri engelleniyor, programatik kaydırma serbest. */
+body.partner-locked #partnerScreen{touch-action:none;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* Aşağı çekip yenileme ve kenardan taşma da kapansın: kazara yenileme
+   partner aşamasının ortasında oturumu "devam" moduna düşürürdü. */
+body.partner-locked{overscroll-behavior:none}
+
+/* Billboard scene with perspective slogan */
+#billboardScreen{background:var(--bg);padding:20px}
+.billboard-stage{width:100%;max-width:var(--col);display:flex;flex-direction:column;align-items:center;gap:14px}
+.billboard-frame{position:relative;width:100%;border-radius:8px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.18);background:#1a1815;isolation:isolate}
+.billboard-frame img{width:100%;display:block}
+.billboard-text{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#1c2433;font-weight:900;font-family:'Playfair Display',Georgia,'Times New Roman',serif;padding:8px;line-height:1.15;letter-spacing:0.5px;text-shadow:0 0 1px rgba(28,36,51,0.2);overflow:hidden;word-wrap:break-word;pointer-events:none;opacity:0;transition:opacity 1s ease;mix-blend-mode:multiply;filter:contrast(1.05)}
+.billboard-text.in{opacity:0.92}
+/* Anket maddeleri "nihai billboard" diye soruyor; katılımcının hangi
+   görsele bakarak cevap vereceği tereddütsüz belli olsun. */
+.billboard-title{font-size:22px;font-weight:700;color:#000;text-align:center;
+    letter-spacing:0.3px;margin:0}
+.billboard-caption{font-size:15px;color:var(--text);text-align:center;font-weight:600;font-family:Georgia,serif}
+.billboard-sub{font-size:13px;color:var(--text2);text-align:center;line-height:1.7}
+
+/* Feedback */
+.fb-flow-step{text-align:center;padding:20px 24px;animation:fadeIn 0.4s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.consultant-card{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-top:12px}
+.consultant-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
+.consultant-avatar.ai{background:linear-gradient(135deg,#5e35b1,#9575cd)}
+.consultant-info{text-align:left}
+.consultant-name{font-size:13px;font-weight:600}
+.consultant-title{font-size:11px;color:var(--text3);margin-top:1px}
+.typing-dots{display:inline-flex;gap:4px;padding:8px 0}
+.typing-dots span{width:8px;height:8px;border-radius:50%;background:var(--text3);animation:typingBounce 1.4s infinite ease-in-out}
+.typing-dots span:nth-child(2){animation-delay:0.2s}
+.typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-6px);opacity:1}}
+.feedback-box{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px 18px;max-width:var(--col);width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.08);margin-top:16px}
+.feedback-positive{border-left:3px solid var(--green)}
+.feedback-negative{border-left:3px solid var(--red)}
+/* Hüküm — geri bildirimin TEK içeriği.
+
+   Uzun değerlendirme metni kaldırıldı (araştırmacı kararı). Metin
+   zaten kaynak manipülasyonunu taşımıyordu: FB.human ile FB.ai
+   birebir aynıydı. Kaynağı ayıran üç unsur duruyor:
+     · danışman kartı  — A… G…. / AdSense AI
+     · kaynak etiketi  — "Reklam ve Pazarlama Uzmanı Değerlendirmesi"
+                         / "Yapay Zeka Değerlendirmesi"
+     · yükleme adımları — "A… G…. analiz ediyor" / "Yapay Zeka analiz ediyor"
+
+   Değerlik ise başparmak yönü ve tek cümleyle veriliyor. */
+.fb-verdict{display:flex;flex-direction:column;align-items:center;gap:10px;
+    margin-bottom:14px}
+.fb-verdict svg{width:58px;height:58px}
+.fb-verdict span{font-size:21px;font-weight:700;letter-spacing:0.3px;text-align:center}
+.fb-verdict--pos{color:var(--green)}
+.fb-verdict--neg{color:var(--red)}
+/* Kaynak etiketi kutunun ALTINDA: değerlendirmeyi kimin yaptığını
+   söyleyen tek görünür unsur (danışman kartıyla birlikte). */
+.fb-source{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+    text-align:center;color:var(--text3);padding-top:12px;border-top:1px solid var(--border)}
+
+/* Survey */
+/* Açık uçlu alan. font-size 16px ALTINA DÜŞMEMELİ: iOS Safari küçük
+   yazılı alanlara odaklanınca sayfayı kendiliğinden yakınlaştırıyor ve
+   katılımcı elle geri uzaklaştırmak zorunda kalıyor. */
+.open-ta{width:100%;min-height:110px;padding:12px;font-family:inherit;font-size:16px;
+    line-height:1.5;color:var(--text);background:var(--bg);border:1.5px solid var(--border);
+    border-radius:var(--r);resize:vertical;-webkit-appearance:none}
+.open-ta:focus{outline:none;border-color:var(--accent2)}
+.open-meta{display:flex;justify-content:space-between;gap:10px;margin-top:6px;
+    font-size:12px;color:var(--text3)}
+.survey-intro{max-width:var(--col);width:100%;font-size:14px;line-height:1.6;
+    color:var(--text);text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+.survey-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px 12px;max-width:var(--col);width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.06);margin-top:14px}
+.survey-q{font-size:15px;margin-bottom:18px;line-height:1.6}
+/* 7 buton 375px'te TEK SATIRDA sigmali: 7x44 + 6x8 = 356px, kullanilabilir
+   genislik ~319px -> son iki buton alt satira dusuyordu. Sabit genislik
+   yerine esnek: flex:1 ile ~40px'e iniyorlar, dokunma yuksekligi 44 kaliyor. */
+.likert-row{display:flex;justify-content:center;gap:6px;margin-bottom:8px;flex-wrap:nowrap;width:100%}
+.likert-btn{flex:1 1 0;min-width:0;height:44px;padding:0;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text3);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:0.2s;display:flex;align-items:center;justify-content:center}
+.likert-btn:hover{border-color:var(--accent);color:var(--accent)}
+.likert-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.likert-labels{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;font-size:10px;color:var(--text3);margin:6px 0 4px;line-height:1.35}.likert-labels span{width:68px;justify-self:center;text-align:center;overflow-wrap:normal}.likert-labels span:first-child{grid-column:1}.likert-labels span:last-child{grid-column:7}
+.likert-labels.valence-labels span:nth-child(2){grid-column:4}
+#completionStatus.saving-warning{color:#c62828;font-weight:700}
+/* NPI forced-choice */
+.npi-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;width:100%;box-shadow:0 2px 10px rgba(0,0,0,0.04)}
+.npi-num{font-size:12px;color:var(--text3);font-weight:700;margin-bottom:10px;letter-spacing:0.5px}
+.npi-options{display:flex;flex-direction:column;gap:10px}
+.npi-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:var(--bg);transition:0.18s;font-size:14px;line-height:1.5;color:var(--text)}
+.npi-opt:hover{border-color:var(--accent);background:var(--accent-light)}
+.npi-opt.selected{border-color:var(--accent);background:var(--accent-light);color:var(--text);font-weight:600}
+.npi-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:1px;transition:0.18s;position:relative}
+.npi-opt:hover .npi-radio{border-color:var(--accent)}
+.npi-opt.selected .npi-radio{border-color:var(--accent);background:var(--accent)}
+.npi-opt.selected .npi-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:#fff}
+
+#thankScreen,#declineScreen,#alreadyScreen,#expiredScreen,#minorScreen,#matchScreen{text-align:center}
+/* Debrief: iletişim bloğu, eylemler, metin seçilebilirliği */
+.debrief-contact{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);
+    font-size:13px;line-height:1.8;color:var(--text2)}
+.debrief-contact a{color:var(--accent)}
+.debrief-advisor{color:var(--text)}
+.debrief-actions{display:flex;flex-direction:column;gap:10px;width:100%;align-items:stretch}
+.debrief-note{font-size:13px;line-height:1.6;min-height:18px;text-align:center}
+/* Bilgilendirme metni kopyalanabilmeli — katılımcı saklamak isteyebilir */
+#debriefScreen .card p,#debriefScreen .card h2,.debrief-contact{
+    -webkit-user-select:text;user-select:text}
+
+/* Uygulama içi tarayıcı uyarısı */
+#inappScreen .card{text-align:left}
+.inapp-steps{font-size:14px;line-height:1.9;color:var(--text2);margin:12px 0 0;padding-left:20px}
+
+/* ── Demografik ── */
+.demo-wrap{max-width:480px;width:100%;display:flex;flex-direction:column;gap:22px}
+.demo-q{display:flex;flex-direction:column;gap:10px}
+.demo-q > label{font-size:15px;font-weight:600;color:var(--text);line-height:1.4}
+.demo-opts{display:flex;flex-direction:column;gap:8px}
+/* Tam genişlik dokunma hedefleri — açılır menü kullanılmıyor */
+.demo-opt{width:100%;min-height:48px;padding:12px 16px;text-align:left;font-size:15px;
+    background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);
+    cursor:pointer;transition:0.18s;font-family:inherit;line-height:1.35}
+.demo-opt:hover{border-color:var(--accent2);background:var(--accent-light)}
+.demo-opt.selected{border-color:var(--accent);background:var(--accent-light);font-weight:600}
+#demoAge{width:100%;min-height:48px;padding:12px 16px;font-size:16px;font-family:inherit;
+    background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text)}
+#demoAge:focus{outline:none;border-color:var(--accent)}
+.demo-hint{font-size:12px;color:var(--text3);min-height:16px}
+.demo-hint.bad{color:var(--red)}
+.step-nav{display:flex;align-items:center;justify-content:center;gap:12px;width:100%}.back-btn{min-width:44px;min-height:44px;padding:8px 14px;font-size:24px}.billboard-caption{max-width:620px;line-height:1.6;text-align:center}
+.study-progress{position:fixed;top:0;left:0;right:0;height:24px;background:var(--bg);z-index:300;text-align:center;font-size:12px;line-height:22px;color:var(--text2)}.study-progress-fill{position:absolute;bottom:0;left:0;height:3px;background:var(--accent,#78a99a);transition:width .3s}body{padding-top:24px}
+</style>
+</head>
+<body>
+<div id="studyProgress" class="study-progress" role="progressbar" aria-label="İlerleme" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="studyProgressText">%0</span><div id="studyProgressFill" class="study-progress-fill" style="width:0%"></div></div>
+
+<!-- 1. CONSENT -->
+<div id="consentScreen" class="screen active">
+    <div class="card">
+        <p>Bu araştırma, dijital ortamlarda reklam üretim süreçlerinin iyileştirilmesine yöneliktir. Araştırma kapsamında sizden yaklaşık 8-12 dakikanızı ayırmanız beklenmektedir.</p>
+        <p>Araştırmaya yaklaşık 400 kişinin katılması planlanmaktadır. Bu çalışmaya katılım tamamen gönüllülük esasına dayanmaktadır.</p>
+        <p>Araştırmanın sağlıklı bir şekilde yürütülebilmesi için sizden tüm soruları eksiksiz yanıtlamanız beklenmektedir. Bu formu okuyup onaylamanız, araştırmaya katılmayı kabul ettiğiniz anlamına gelecektir. Ancak, çalışmaya katılmama veya katıldıktan sonra herhangi bir aşamada çalışmayı bırakma hakkına da sahipsiniz. Bu çalışmadan elde edilecek bilgiler tamamen araştırma amacı ile kullanılacaktır.</p>
+    </div>
+    <p id="consentError" role="alert"></p>
+    <div class="btn-row">
+        <button id="consentAccept" class="btn" onclick="acceptConsent()">Araştırmaya katılmayı kabul ediyorum.</button>
+        <button class="btn btn-outline" onclick="declineConsent()">Araştırmaya katılmayı kabul etmiyorum.</button>
+    </div>
+</div>
+
+<!-- 1b. DECLINE -->
+<div id="declineScreen" class="screen">
+    <h1 style="font-size:22px;font-family:Georgia,serif;font-weight:400">Teşekkürler.</h1>
+</div>
+
+<!-- 1c. DAHA ÖNCE KATILDI -->
+<div id="alreadyScreen" class="screen">
+    <h1 style="font-size:22px;font-family:Georgia,serif;font-weight:400;line-height:1.6;text-align:center;max-width:420px">Bu çalışmaya daha önce katıldınız.<br>Katkınız için teşekkür ederiz.</h1>
+</div>
+
+<!-- 1d. OTURUM SÜRESİ DOLDU -->
+<div id="expiredScreen" class="screen">
+    <h1 style="font-size:22px;font-family:Georgia,serif;font-weight:400;line-height:1.6;text-align:center;max-width:420px">Çalışmaya uzun süre ara verildiği için oturumunuz sonlandı.<br>İlginiz için teşekkür ederiz.</h1>
+</div>
+
+<!-- 0. UYGULAMA İÇİ TARAYICI UYARISI (onamdan ÖNCE) -->
+<div id="inappScreen" class="screen">
+    <div class="card">
+        <h2>Bağlantıyı tarayıcıda açın</h2>
+        <p>Bu sayfayı bir uygulamanın içindeki tarayıcıda açmış görünüyorsunuz. Çalışmanın düzgün çalışabilmesi için lütfen bağlantıyı <b>Chrome</b> veya <b>Safari</b>'de açın.</p>
+        <ol class="inapp-steps">
+            <li>Ekranın sağ üstündeki <b>⋯</b> menüsüne dokunun.</li>
+            <li><b>"Tarayıcıda aç"</b> seçeneğini seçin.</li>
+        </ol>
+    </div>
+    <button class="btn btn-outline" onclick="dismissInappWarning()">Yine de burada devam et</button>
+</div>
+
+<!-- 1e. 18 YAŞ ALTI -->
+<div id="minorScreen" class="screen">
+    <h1 style="font-size:22px;font-family:Georgia,serif;font-weight:400;line-height:1.6;text-align:center;max-width:420px">Bu çalışmaya yalnızca 18 yaşını doldurmuş kişiler katılabilmektedir.<br>İlginiz için teşekkür ederiz.</h1>
+</div>
+
+<!-- 1f. DEMOGRAFİK -->
+<div id="demoScreen" class="screen">
+    <div class="demo-wrap">
+        <div class="slogan-title">Birkaç kısa soru</div>
+        <div class="demo-q">
+            <label for="demoAge">Yaşınız</label>
+            <input id="demoAge" type="number" inputmode="numeric" min="18" max="99" step="1"
+                   autocomplete="off" placeholder="Örn. 24" oninput="onDemoAge()">
+            <div class="demo-hint" id="demoAgeHint"></div>
+        </div>
+        <div class="demo-q">
+            <label>Cinsiyetiniz</label>
+            <div class="demo-opts" id="demoGender"></div>
+        </div>
+        <div class="demo-q">
+            <label>Tamamladığınız en yüksek eğitim düzeyi nedir?</label>
+            <div class="demo-opts" id="demoEducation"></div>
+        </div>
+        <div class="demo-q">
+            <label>Halen bir eğitim kurumunda öğrenci olarak kayıtlı mısınız?</label>
+            <div class="demo-opts" id="demoStudent"></div>
+        </div>
+        <div class="demo-q">
+            <label>Şu anda gelir getirici bir işte çalışıyor musunuz?</label>
+            <div class="demo-opts" id="demoEmployment"></div>
+        </div>
+    </div>
+    <button id="demoSubmit" class="btn" disabled onclick="submitDemo()">Devam Et</button>
+</div>
+
+<!-- 2. INTRO -->
+<div id="introScreen" class="screen">
+    <div class="card">
+        <h2>Reklam Ajansı Projesi</h2>
+        <p>Bir reklam ajansının projesinde görevlisiniz. Göreviniz verilen bilgileri kullanarak partneriniz ile birlikte billboard tasarlamaktır.</p>
+        <p>Sizin göreviniz markanın <b>sloganını</b> yazmak, partnerinizin görevi ise bu sloganın yer alacağı <b>billboard’ın görsel tasarımını</b> yapmak.</p>
+        <p>Önce siz slogana karar vereceksiniz. Sonra partneriniz oluşturduğunuz sloganın billboard’a yerleştirilmesi işini yapacak. Böylece billboard son halini alacak.</p>
+    </div>
+    <button class="btn" onclick="showScreen('briefScreen')">Devam Et</button>
+</div>
+
+<!-- 3. BRIEF -->
+<div id="briefScreen" class="screen">
+    <div class="card">
+        <h2>Görev: Slogan Yazımı</h2>
+        <p>Aşağıdaki marka bilgilerini inceleyiniz, bir sonraki adımda bir partner ile eşleşeceksiniz. Daha sonra sizden sloganınızı belirlemeniz istenecektir.</p>
+        <div class="brand-box">
+            <div class="row"><b>Marka Adı:</b><span>Doruk</span></div>
+            <div class="row"><b>Ürün Tipi:</b><span>Doğal Kaynak Suyu</span></div>
+            <div class="row"><b>Kuruluş:</b><span>2007</span></div>
+            <div class="row"><b>Kaynak:</b><span>Kaz Dağları</span></div>
+            <div class="row"><b>Üretim Süreci:</b><span>Kaynağın saflığını korumak için, su borularla taşınmadan doğrudan zirvedeki tesiste el değmeden şişelenmektedir.</span></div>
+            <div class="row"><b>Analiz değerleri:</b><span>7.5 pH değeri ile yumuşak içimlidir.</span></div>
+            <div class="row"><b>Hedef Kitle:</b><span>Günlük tüketimde kaynağın doğallığına ve suyun nereden geldiğine önem veren bilinçli tüketiciler.</span></div>
+        </div>
+    </div>
+    <button class="btn" onclick="showScreen('matchScreen');runMatching()">Devam Et</button>
+</div>
+
+<!-- 4. MATCHING -->
+<div id="matchScreen" class="screen">
+    <div class="spinner"></div>
+    <div class="match-text" id="matchText">Partner aranıyor...</div>
+    <div class="match-sub" id="matchSub1"></div>
+    <div class="match-sub" id="matchSub2"></div>
+    <div class="match-bar-wrap" id="matchBarWrap"><div class="match-bar-fill" id="matchBar"></div></div>
+    <div class="match-pct" id="matchPct"></div>
+    <div class="match-card" id="matchCard"><div class="name">Deniz A.</div><div class="label">Partner olarak eşleştirildi</div></div>
+</div>
+
+<!-- 5. INSTRUCTIONS -->
+<div id="instrScreen" class="screen">
+    <div class="card">
+        <h2>Görev</h2>
+        <p><b>Doruk</b> markası için bir slogan yazacaksınız.</p>
+        <p>Slogan, markanın hedef kitleye temel mesajıdır. <b>Slogan</b>, akılda kalıcı, marka tonuna uygun olmalıdır.</p>
+        <div class="highlight">
+            Sloganınızı yazıp tamamladıktan sonra partneriniz <b>Deniz A.</b> billboard’ın görsel tasarımına başlayacak. Acele etmeyin; düşünmek için yeterli zamanınız var.
+        </div>
+    </div>
+    <button class="btn" onclick="showScreen('sloganScreen');initSlogan()">Başla</button>
+</div>
+
+<!-- 6. SLOGAN WRITING -->
+<div id="sloganScreen" class="screen">
+    <div class="slogan-wrap">
+        <div class="slogan-title">Doruk Su</div>
+        <div class="slogan-sub">Slogan oluşturma</div>
+
+        <!-- Marka bilgileri tablosu ekranı çok uzatıyordu; katmana taşındı -->
+        <button type="button" class="brand-info-btn" onclick="openBrandInfo()">
+            <span><span class="bi-main">Marka Bilgileri</span><span class="bi-sub">Marka bilgilerini hatırlamak için dokunun</span></span>
+            <span aria-hidden="true">›</span>
+        </button>
+
+        <div class="kelime-strip-wrap">
+            <label class="slogan-label">Sloganınız:</label>
+            <div class="slogan-preview empty" id="sloganPreview">Kartlara dokunarak sloganınızı oluşturun</div>
+            <div class="strip-actions">
+                <button type="button" class="recall-btn" id="undoBtn" onclick="undoCard()">↶ Geri al</button>
+                <button type="button" class="recall-btn" id="clearBtn" onclick="clearCards()">✕ Temizle</button>
+            </div>
+        </div>
+
+        <div class="kelime-pool-title">Doruk marka kelime havuzu</div>
+        <div class="kelime-groups">
+            <div class="kelime-group">
+                <h5>İlk kelime</h5>
+                <div class="gh-sub">Buradan bir tane seçin.</div>
+                <div class="kelime-cards" id="cardsA"></div>
+            </div>
+            <div class="kelime-group">
+                <h5>İkinci kelime</h5>
+                <div class="gh-sub">Buradan bir tane seçin.</div>
+                <div class="kelime-hint" id="cardsBHint">Önce ilk kelimeyi seçin, ardından bunlardan birini seçebilirsiniz.</div>
+                <div class="kelime-cards" id="cardsB"></div>
+            </div>
+        </div>
+    </div>
+    <button id="confirmBtn" class="btn btn-sm" disabled onclick="handleSloganConfirm()">Sloganı Tamamla</button>
+</div>
+
+<!-- MARKA BİLGİLERİ KATMANI (slogan ekranından açılır) -->
+<div class="popup-overlay" id="brandInfoPopup" style="z-index:140">
+    <div class="brand-info-sheet">
+        <div class="brand-info-head">
+            <h3>Marka Bilgileri</h3>
+            <button type="button" class="brand-info-close" onclick="closeBrandInfo()" aria-label="Kapat">✕</button>
+        </div>
+        <div class="brand-info-body">
+            <div class="brand-box">
+                <div class="row"><b>Marka Adı:</b><span>Doruk</span></div>
+                <div class="row"><b>Ürün Tipi:</b><span>Doğal Kaynak Suyu</span></div>
+                <div class="row"><b>Kuruluş:</b><span>2007</span></div>
+                <div class="row"><b>Kaynak:</b><span>Kaz Dağları</span></div>
+                <div class="row"><b>Üretim Süreci:</b><span>Kaynağın saflığını korumak için, su borularla taşınmadan doğrudan zirvedeki tesiste el değmeden şişelenmektedir.</span></div>
+                <div class="row"><b>Analiz değerleri:</b><span>7.5 pH değeri ile yumuşak içimlidir.</span></div>
+                <div class="row"><b>Hedef Kitle:</b><span>Günlük tüketimde kaynağın doğallığına ve suyun nereden geldiğine önem veren bilinçli tüketiciler.</span></div>
+            </div>
+        </div>
+        <button class="btn" onclick="closeBrandInfo()">Kapat</button>
+    </div>
+</div>
+
+<!-- ONBOARD — slogan ekranı tanıtımı -->
+<div class="popup-overlay" id="sloganOnboard" style="z-index:150">
+    <div class="onboard-card">
+        <h3>Sloganınızı nasıl oluşturursunuz?</h3>
+        <ol>
+            <li><b>İlk kelime</b> bölümünden bir kelimeye dokunun.</li>
+            <li>Ardından <b>İkinci kelime</b> bölümünden bir kelimeye dokunun.</li>
+        </ol>
+        <p class="onboard-note">Seçtiklerinizi <b>↶ Geri al</b> ve <b>✕ Temizle</b> ile değiştirebilirsiniz. Oluşan slogan en üstte canlı görünür.</p>
+        <button class="btn" onclick="closeOnboard()">Anladım, başlayalım</button>
+    </div>
+</div>
+
+<!-- 7. PARTNER WAIT -->
+<div id="partnerWaitScreen" class="screen">
+    <div class="card" style="text-align:center">
+        <div style="font-size:36px;margin-bottom:10px;color:var(--green)">&#10003;</div>
+        <h2 style="text-align:center">Sloganınız Deniz A.'ya iletildi.</h2>
+        <p>Şimdi partneriniz sloganınızın billboard üzerindeki görünümü üzerinde çalışacak (yazı tipi, font büyüklüğü, renk).</p>
+        <p style="margin-bottom:0">Bu aşamada sizin göreviniz bitti. <b>Devam Et</b>'e bastığınızda partneriniz çalışmaya başlayacak. Partnerinizin ekranını izleyebilirsiniz.</p>
+    </div>
+    <button class="btn" onclick="showBgInfo()">Devam Et</button>
+</div>
+
+<!-- ARKA PLAN BİLGİ POPUP (önce çıkar, Devam Et ile geçilir) -->
+<div class="popup-overlay" id="bgInfoPopup">
+    <div class="pre-popup">
+        <div class="pre-popup-text" style="font-weight:400;color:var(--text);line-height:1.7;max-width:420px">Billboard üzerindeki arka plan görseli marka tarafından önceden seçilmiştir. Partneriniz, sloganınızı ve bu görseli dikkate alarak sloganın billboard üzerinde en iyi şekilde görünmesini sağlamak için çalışacaktır.</div>
+        <button class="btn" onclick="proceedFromBgInfo()">Devam Et</button>
+    </div>
+</div>
+
+<!-- PRE-PARTNER POPUP -->
+<div class="popup-overlay" id="prePartnerPopup">
+    <div class="pre-popup">
+        <div class="spinner" style="width:40px;height:40px;border-width:3px"></div>
+        <div class="pre-popup-text">Partneriniz şimdi çalışmaya başlayacak...</div>
+    </div>
+</div>
+
+<!-- 7b. ORTAK ÇALIŞMA ALANI — partner tasarımı burada yapıyor.
+     Popup değil tam ekran: telefonda katman içinde katman kaydırmak
+     kullanılamaz hâle geliyordu. -->
+<div id="partnerScreen" class="screen">
+    <div class="collab-wrap">
+        <div class="collab-head">
+            <span class="collab-dot"></span>
+            <span class="collab-name">Deniz A.</span>
+            <span class="collab-online">çevrimiçi</span>
+            <span class="collab-clock" id="collabClock">00:00</span>
+        </div>
+
+        <div class="collab-reconnect" id="popupReconnect"><span class="reconnect-spinner"></span>Yeniden bağlanılıyor…</div>
+
+        <div class="collab-stage" id="collabStage">
+        <div class="bb-mini" id="bbMini">
+            <!-- src yerine data-src: display:none icindeki <img> etiketleri de
+                 sayfa acilisinda indirilir. Gorsel ancak bu asamaya girilirken
+                 yuklenir; boylece onam ekranindaki assign istegiyle bant
+                 genisligi icin yarismaz. -->
+            <img id="bbMiniImg" alt="Önizleme">
+            <div class="bb-mini-text" id="bbMiniText"></div>
+        </div>
+
+        <div class="collab-status" id="collabStatus">
+            <span id="collabStatusText">Bağlanıyor…</span>
+            <span class="collab-typing" id="collabTyping"><span></span><span></span><span></span></span>
+        </div>
+        </div>
+
+        <div class="collab-ctl" id="ctlSize">
+            <div class="collab-ctl-head"><span>Yazı Boyutu</span><span class="collab-ctl-val" id="sizeCurrent">24 pt</span></div>
+            <div class="size-grid" id="sizeGrid"></div>
+        </div>
+
+        <div class="collab-ctl" id="ctlColor">
+            <div class="collab-ctl-head"><span>Renk</span>
+                <span class="palette-current"><span class="pc-swatch" id="pcSwatch"></span><span class="pc-hex" id="pcHex">#1C2433</span></span>
+            </div>
+            <div class="color-palette" id="sloColorRow"></div>
+        </div>
+
+        <div class="collab-ctl" id="ctlFont">
+            <div class="collab-ctl-head"><span>Yazı Tipi</span><span class="collab-ctl-val" id="fontCurrent">Playfair Display</span></div>
+            <div class="font-options" id="fontOptions"></div>
+        </div>
+
+        <div class="collab-done" id="popupDone">&#10003; Deniz A. tasarım seçimlerini tamamladı</div>
+        <!-- Kontrolün üstüne yapışan etiket. .collab-wrap İÇİNDE olmalı:
+             konumu ona göre hesaplanıyor ve position:relative olan tek ata o.
+             Dışarıdayken sayfaya göre konumlanıp sola taşıyordu. -->
+        <div class="collab-badge" id="collabBadge">Deniz A.</div>
+    </div>
+</div>
+
+<!-- 8. BILLBOARD REVEAL -->
+<div id="billboardScreen" class="screen">
+    <div class="billboard-stage">
+        <h2 class="billboard-title">Görev Tamamlandı.</h2>
+        <div class="billboard-caption">Billboard’ı ekranda görmektesiniz. Lütfen billboard’ı dikkatlice inceleyiniz. Bir sonraki adımda bazı soruları yanıtlamanız istenecektir.</div>
+        <div class="billboard-frame" id="billboardFrame">
+            <img id="billboardImg" alt="Billboard">
+            <div class="billboard-text" id="billboardText"></div>
+        </div>
+        <button class="btn btn-sm" id="billboardContinue" style="display:none" onclick="leaveBillboard()">Devam Et</button>
+    </div>
+</div>
+
+
+<!-- 10. SURVEY -->
+<div id="surveyScreen" class="screen">
+    <div id="surveyArea" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:14px"></div>
+</div>
+
+<!-- 10b. NPI -->
+<div id="npiScreen" class="screen">
+    <div style="max-width:var(--col);width:100%;display:flex;flex-direction:column;gap:14px">
+        <div class="card" style="text-align:left">
+            <p>Aşağıda her madde için <b>iki ifade</b> verilmiştir. Sizi <b>daha iyi tanımlayan</b> ifadeyi seçiniz. İki ifade de tam olarak size uymasa bile, size <b>daha yakın</b> olanı işaretleyiniz.</p>
+        </div>
+        <div id="npiArea" style="display:flex;flex-direction:column;gap:12px"></div>
+        <button id="npiSubmit" class="btn" disabled onclick="submitNpi()" style="align-self:center">Tamamla</button>
+    </div>
+</div>
+
+<!-- 10c. MANIPULATION CHECK -->
+<div id="mcheckScreen" class="screen">
+    <div style="max-width:var(--col);width:100%;display:flex;flex-direction:column;gap:14px;align-items:center">
+        <div id="mcheckArea" style="width:100%;display:flex;flex-direction:column;gap:14px"></div>
+        <button id="mcheckSubmit" class="btn" disabled onclick="submitMcheck()">Devam Et</button>
+    </div>
+</div>
+
+<!-- 10d. DEBRIEF -->
+<div id="debriefScreen" class="screen">
+    <div style="max-width:var(--col);width:100%;display:flex;flex-direction:column;gap:18px;align-items:center">
+        <div class="card" style="text-align:left">
+            <h2>Bilgilendirme</h2>
+            <p>Değerli Katılımcı, araştırmamıza katıldığınız için teşekkür ederiz. Araştırmanın gerçek amacının önceden bilinmesinin katılımcıların doğal yargı sürecini etkileme riski nedeniyle, çalışmanın başında bu araştırmanın reklam üretim süreçlerinin iyileştirilmesine yönelik olduğu belirtilmiştir. Oysa araştırmanın temel amacı; narsisist kişilik özelliğinin faillik hissi üzerindeki etkisinde geri bildirimin rolünü incelemektir.</p>
+            <p>Bu çalışmada size sunulan "partner" gerçek bir kişi değildi. Bir yazılım tarafından simüle edilmiş bir partnerle çalıştınız. Bu sürümde billboard çalışmanız değerlendirilmemiş ve size geri bildirim verilmemiştir.</p>
+            <p>Bu bilgilendirmeden sonra verilerinizin analizde kullanılmasını istemiyorsanız, herhangi bir yaptırım olmaksızın çalışmadan çekilebilirsiniz.</p>
+            <div class="debrief-contact">
+                <b>Araştırmacı</b><br>
+                <span id="researcherName">Hüseyin Orak</span><br>
+                <a id="researcherMail" href="mailto:huseyin.orak@comu.edu.tr">huseyin.orak@comu.edu.tr</a><br>
+                <span id="researcherOrg">Marmara Üniversitesi</span><br>
+                <span class="debrief-advisor">Danışman: Prof. Dr. Eyüp Aygün Tayşir</span>
+            </div>
+        </div>
+        <div class="debrief-actions">
+            <button class="btn" onclick="showThank()">Tamamla</button>
+            <button class="btn btn-outline" id="withdrawBtn" onclick="requestWithdraw()">Vazgeç</button>
+            <div id="withdrawNote" class="debrief-note"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 11. THANK -->
+<div id="thankScreen" class="screen">
+    <div id="completionTitle" style="font-size:24px;font-family:Georgia,serif;color:#000">Lütfen bekleyiniz</div>
+    <p id="completionStatus" class="saving-warning" role="status" aria-live="polite" style="max-width:420px;line-height:1.6">Yanıtlarınız kaydediliyor. Lütfen bu sayfayı kapatmayınız.</p>
+</div>
+
+<script>
+/* Durable session / wire protocol. No experiment text, timing or randomization
+ * lives here. CommonJS export is for deterministic fault-injection tests. */
+(function(root){
+'use strict';
+const SCHEMA=2;
+const copy=x=>JSON.parse(JSON.stringify(x));
+const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+function canonical(x){
+ if(Array.isArray(x))return '['+x.map(canonical).join(',')+']';
+ if(object(x))return '{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+canonical(x[k])).join(',')+'}';
+ if(x===undefined||typeof x==='number'&&!Number.isFinite(x))throw Error('invalid_json');
+ return JSON.stringify(x);
+}
+function validCondition(c){return object(c)&&['human','ai'].includes(c.source)&&['positive','negative'].includes(c.valence);}
+function strictAge(raw){return typeof raw==='string'&&/^\d{1,2}$/.test(raw.trim())?Number(raw.trim()):null;}
+// Researcher supplied this key on 2026-09-24. Item 08 is not scored.
+const NPI_KEY_VERSION='researcher-2026-09-24-v1';
+const NPI_ONE=[null,'b','b','b','a','a','a','b',null,'b','a','a','b','a','b','a','b'];
+function scoreNpi(record){
+ let count=0,total=0;const items={};
+ for(let i=1;i<=16;i++){if(i===8)continue;const answer=record['npi_'+String(i).padStart(2,'0')];
+  const score=['a','b'].includes(answer)?Number(answer===NPI_ONE[i]):null;
+  items[String(i).padStart(2,'0')]=score;if(score!==null){count++;total+=score;}
+ }
+ return {npi_key_version:NPI_KEY_VERSION,npi_scored_items:count,npi_item_scores:items,npi_total:count===15?total:null,
+  npi_attention_pass:['a','b'].includes(record.npi_08)?record.npi_08==='a':null,npi_attention_key_version:'npi-presented-v1-item08-a'};
+}
+function validAck(a,b){
+ return object(a)&&a.ok===true&&a.action===b.action&&a.pid===b.pid&&a.local_session_id===b.local_session_id&&
+ a.schema_version===SCHEMA&&Number.isSafeInteger(a.client_revision)&&a.client_revision===b.client_revision&&
+ a.snapshot_id===b.snapshot_id&&a.payload_hash===b.payload_hash&&a.durable===true&&
+ (b.action!=='finalize'||a.terminal==='completed')&&(b.action!=='withdraw'||a.terminal==='withdrawn');
+}
+function createStore({storage,key,uuid,now=Date.now,onError=()=>{},study,environment,frontendVersion,assetVersion}){
+ let state=null,failed=false;
+ const fresh=()=>({schema_version:SCHEMA,study_version:study,environment,frontend_version:frontendVersion,asset_version:assetVersion,
+  local_session_id:uuid(),allocation_token:uuid(),access_token:uuid()+uuid(),generation:uuid(),started_at:now(),last_activity_at:now(),
+  revision:0,acked_revision:0,terminal:null,intent:null,assignment:null,presented:null,record:{},progress:{screen:'consentScreen',stage:'',resumedCount:0},
+  view:{},events:[],inflight:null,writer_epoch:0});
+ function fail(code){failed=true;onError(code);throw Error(code);}
+ try{const raw=storage.getItem(key);if(raw!==null){state=JSON.parse(raw);if(!object(state)||state.schema_version!==SCHEMA||state.study_version!==study||state.environment!==environment||!['local_session_id','allocation_token','access_token','generation'].every(k=>typeof state[k]==='string'&&state[k].length>0)||!Number.isFinite(state.started_at)||!Number.isFinite(state.last_activity_at)||!object(state.record)||!object(state.progress)||!object(state.view)||!Array.isArray(state.events)||!Number.isSafeInteger(state.revision)||state.revision<0||!Number.isSafeInteger(state.acked_revision)||state.acked_revision<0||state.acked_revision>state.revision||![null,'completed','withdrawn','declined','ineligible','expired'].includes(state.terminal))fail('storage_corrupt');}}
+ catch(e){if(!failed)fail('storage_unreadable');else throw e;}
+ state=state||fresh();
+ function commit(mutator){
+  if(failed)throw Error('storage_blocked');const next=copy(state);mutator(next);
+  try{storage.setItem(key,canonical(next));}catch(e){return fail('storage_write_failed');}
+  state=next;return copy(state);
+ }
+ return {
+  key,peek:()=>copy(state),initialize:()=>commit(()=>{}),
+  update:(fn)=>commit(fn),
+  save(patch,progress,view){return commit(s=>{
+   if(!object(patch))throw Error('invalid_patch');
+   if(s.terminal)throw Error('session_terminal');
+   Object.assign(s.record,copy(patch));s.revision++;
+   if(progress)Object.assign(s.progress,copy(progress));if(view)s.view=copy(view);
+  });},
+  bind(reply,generation){return commit(s=>{
+   if(s.generation!==generation||s.terminal||s.intent==='withdraw')throw Error('obsolete_assignment');
+   if(!validCondition(reply)||typeof reply.pid!=='string'||reply.local_session_id!==s.local_session_id||reply.allocation_token!==s.allocation_token||reply.schema_version!==SCHEMA||reply.assignedBy!=='server')throw Error('invalid_assignment');
+   const condition={pid:reply.pid,source:reply.source,valence:reply.valence,local_session_id:s.local_session_id};
+   if(s.assignment&&canonical(s.assignment)!==canonical(condition))throw Error('condition_conflict');
+   if(!s.assignment)s.events.push({id:uuid(),type:'assignment_bound',at:now(),detail:{source:reply.source,valence:reply.valence}});
+   s.assignment=condition;
+   Object.assign(s.record,{pid:reply.pid,condition_source:reply.source,condition_valence:reply.valence,condition_assigned_by:'server',session_start_iso:new Date(s.started_at).toISOString(),local_session_id:s.local_session_id,study_version:s.study_version,schema_version:SCHEMA,frontend_version:s.frontend_version,asset_version:s.asset_version,environment:s.environment});s.revision++;
+  });},
+  event(type,detail={}){return commit(s=>{if(s.events.length>=128)throw Error('event_limit');s.events.push({id:uuid(),type,at:now(),detail:copy(detail)});s.revision++;});},
+  ack(body,ack){if(!validAck(ack,body))return false;commit(s=>{
+   if(s.local_session_id!==body.local_session_id||s.generation!==body.generation||!s.inflight||s.inflight.snapshot_id!==body.snapshot_id)throw Error('obsolete_ack');
+   s.acked_revision=body.client_revision;s.inflight=null;
+   if(['finalize','withdraw'].includes(body.action)&&body.client_revision===s.revision){s.terminal=ack.terminal;s.intent=null;}
+  });return true;},
+  newSession(){
+   if(state.revision>state.acked_revision||state.inflight)throw Error('unsent_session');
+   const old=state;try{storage.setItem(key+':archive:'+old.local_session_id,canonical(old));storage.setItem(key,canonical(fresh()));state=JSON.parse(storage.getItem(key));}catch(e){fail('storage_write_failed');}
+   return copy(state);
+  }
+ };
+}
+async function sha256(value,crypto){const bytes=new TextEncoder().encode(canonical(value));const hash=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(hash),x=>x.toString(16).padStart(2,'0')).join('');}
+function createSync({store,fetch,endpoint,crypto,uuid,canWrite=()=>true,onState=()=>{},onFatal=()=>{},timer=setTimeout,clear=clearTimeout,random=Math.random}){
+ let running=null,scheduled=null,failures=0,failedAttempts=0,attempts=0,controller=null,closed=false,status='KUYRUKTA';
+ const notify=s=>{status=s;onState(s);};
+ const retry=()=>{if(closed||scheduled)return;const delay=Math.min(30000,1000*2**Math.min(failures,5))*(0.75+random()*0.5);scheduled=timer(()=>{scheduled=null;flush();},delay);};
+ async function snapshot(){
+  let s=store.peek();if(s.inflight)return s.inflight;
+  const action=s.intent==='withdraw'?'withdraw':s.intent==='finalize'?'finalize':'upsert';
+  const body={action,pid:s.assignment.pid,local_session_id:s.local_session_id,allocation_token:s.allocation_token,access_token:s.access_token,generation:s.generation,
+   study_version:s.study_version,environment:s.environment,schema_version:SCHEMA,writer_epoch:s.writer_epoch,client_revision:s.revision,snapshot_id:uuid(),data:copy(s.record),events:copy(s.events)};
+  body.payload_hash=await sha256({data:body.data,events:body.events,action:body.action},crypto);
+  if(store.peek().generation!==s.generation||!canWrite())throw Error('obsolete_snapshot');
+  store.update(n=>{n.inflight=body;});return body;
+ }
+ async function run(){
+  if(closed||!canWrite())return false;let s=store.peek();
+  if(s.terminal&&s.terminal!=='expired'){notify(s.terminal==='completed'?'OK':'WITHDRAWN');return true;}
+  if(!s.assignment||!endpoint){notify('KUYRUKTA');return false;}
+  while(!closed&&canWrite()){
+   s=store.peek();if(s.acked_revision>=s.revision&&!s.inflight){notify('OK');return true;}
+   const body=await snapshot();controller=new AbortController();const id=timer(()=>controller&&controller.abort(),70000);attempts++;notify('GÖNDERİLİYOR');
+   try{
+    const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),signal:controller.signal});
+    if(!r.ok)throw Error('http_'+r.status);const a=await r.json();
+    if(closed||store.peek().generation!==body.generation||!canWrite())return false;
+    if(a&&a.ok===false&&a.retryable===false){notify('BLOCKED');onFatal(a.code||'server_rejected');return false;}
+    if(!store.ack(body,a))throw Error('ack_mismatch');
+    failures=0;notify('OK');if(store.peek().terminal)return true;
+   }catch(e){if(!closed){failures++;failedAttempts++;notify('HATA');retry();}return false;}finally{clear(id);controller=null;}
+  }return false;
+ }
+ function flush(){
+  if(running)return running;if(scheduled){clear(scheduled);scheduled=null;}
+  running=run().catch(e=>{notify('BLOCKED');onFatal('local_sync_failure');return false;}).finally(()=>{running=null;});return running;
+ }
+ return {flush,schedule(){if(!scheduled&&!running&&!closed)scheduled=timer(()=>{scheduled=null;flush();},400);},
+  status:()=>status,counters:()=>({upload_attempts:attempts,upload_failures:failedAttempts,consecutive_failures:failures}),
+  stop(){closed=true;if(scheduled)clear(scheduled);if(controller)controller.abort();},
+  beacon(send){const s=store.peek();if(!canWrite()||!s.inflight||closed)return false;return send(endpoint,new Blob([JSON.stringify(s.inflight)],{type:'text/plain;charset=utf-8'}));}
+ };
+}
+/* Exclusive browser lock is held for the page lifetime. A second tab is never
+ * allowed to initialize, resume, write or reset the shared session. */
+function acquireWriter(locks,key,active,passive){
+ if(!locks||typeof locks.request!=='function'){passive('unsupported_lock');return Promise.resolve(false);}
+ return locks.request(key,{mode:'exclusive',ifAvailable:true},lock=>{
+  if(!lock){passive('second_tab');return false;}
+  return new Promise(release=>active(release));
+ });
+}
+/* Remaining time is consumed only while visible; visibility events split the
+ * interval exactly, rather than charging a whole hidden interval on return. */
+function visibleWait(ms,{document,now,signal,onPause=()=>{},setTimer=setTimeout,clearTimer=clearTimeout}){
+ return new Promise((resolve,reject)=>{
+  let remaining=ms,last=now(),visible=!document.hidden,id;
+  function cleanup(){clearTimer(id);document.removeEventListener('visibilitychange',change);if(signal)signal.removeEventListener('abort',abort);}
+  function abort(){cleanup();reject(Error('stage_cancelled'));}
+  function account(){const at=now();if(visible)remaining-=Math.max(0,at-last);last=at;}
+  function tick(){account();if(signal&&signal.aborted)return abort();if(remaining<=0){cleanup();resolve();}else id=setTimer(tick,Math.min(remaining,50));}
+  function change(){account();visible=!document.hidden;onPause(Math.max(0,remaining));}
+  if(signal&&signal.aborted)return abort();document.addEventListener('visibilitychange',change);if(signal)signal.addEventListener('abort',abort,{once:true});tick();
+ });
+}
+const api={SCHEMA,canonical,copy,object,validCondition,validAck,strictAge,scoreNpi,NPI_KEY_VERSION,createStore,createSync,sha256,acquireWriter,visibleWait};
+if(typeof module==='object'&&module.exports)module.exports=api;else root.StudyReliability=api;
+})(typeof window==='object'?window:globalThis);
+
+const STUDY_VERSION='2026-09-27-no-feedback-preview-v1';
+const DEV_MODE = false;   // YAYINA ÇIKMADAN ÖNCE false YAPILACAK
+
+/* Deneyi BİTİRMİŞ birinin ikinci kez katılmasını engelleyen duvar.
+   Test aşamasında kapalı: araştırmacı aynı telefonda tekrar tekrar
+   deneyemiyordu.
+
+   ⚠ VERİ TOPLAMAYA BAŞLAMADAN ÖNCE true YAPILACAK. Kapalı bırakılırsa
+   tek kişi birden fazla satır üretebilir ve hücre dengesi bozulur.
+   (Sunucudaki parmak izi tespiti kapansa da çalışmaya devam eder —
+   engellemez, yalnız duplicate_suspect ile işaretler.) */
+const BLOCK_REPEAT_PARTICIPATION = false;
+
+/* ============================================================
+ *  GELİŞTİRME ARAÇLARI
+ *  DEV_MODE=false iken bu bölümdeki hiçbir şey DOM'a girmez ve
+ *  konsola tek satır yazılmaz.
+ * ============================================================ */
+function log(){ if(DEV_MODE) console.log.apply(console,arguments); }
+function warn(){ if(DEV_MODE) console.warn.apply(console,arguments); }
+
+/* ============================================================
+ *  OTURUM & TEKNİK TELEMETRİ
+ * ============================================================ */
+let SESSION_START_ISO=new Date().toISOString();
+const SESSION_T0=performance.now();
+const IN_APP_BROWSER=/FBAN|FBAV|Instagram|Line|Twitter|WhatsApp/i.test(navigator.userAgent);
+
+const TEL={orientation_changes:0,orientation_at_start:''};
+function orientationLabel(){
+    if(screen.orientation&&screen.orientation.type) return screen.orientation.type;
+    if(typeof window.orientation==='number') return Math.abs(window.orientation)===90?'landscape':'portrait';
+    return window.innerWidth>window.innerHeight?'landscape':'portrait';
+}
+TEL.orientation_at_start=orientationLabel();
+(function bindOrientation(){
+    const bump=()=>{TEL.orientation_changes++;};
+    if(screen.orientation&&screen.orientation.addEventListener) screen.orientation.addEventListener('change',bump);
+    else window.addEventListener('orientationchange',bump);
+})();
+
+function collectTelemetry(){
+    const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+    return {
+        user_agent:navigator.userAgent,
+        device_type:classifyDeviceType(),
+        screen_w:screen.width,
+        screen_h:screen.height,
+        viewport_w:window.innerWidth,
+        viewport_h:window.innerHeight,
+        device_pixel_ratio:window.devicePixelRatio||1,
+        is_touch:('ontouchstart' in window)||(navigator.maxTouchPoints||0)>0,
+        max_touch_points:navigator.maxTouchPoints||0,
+        timezone:(Intl.DateTimeFormat().resolvedOptions().timeZone||''),
+        language:navigator.language||'',
+        platform:navigator.platform||'',
+        is_inapp_browser:IN_APP_BROWSER,
+        connection_type:(c&&c.effectiveType)?c.effectiveType:'',
+        orientation_at_start:TEL.orientation_at_start,
+        orientation_changes:TEL.orientation_changes
+    };
+}
+function classifyDeviceType(){
+    const ua=navigator.userAgent||'',touch=navigator.maxTouchPoints||0;
+    // Researcher requested two categories; tablets belong to the phone/mobile group.
+    if(/iPad|Tablet|PlayBook|Silk/i.test(ua)||(/Android/i.test(ua)&&!/Mobile/i.test(ua))||(/Macintosh/i.test(ua)&&touch>1))return 'phone';
+    if((navigator.userAgentData&&navigator.userAgentData.mobile)||/Mobi|Android|iPhone|iPod|Windows Phone/i.test(ua))return 'phone';
+    return 'pc';
+}
+
+/* ============================================================
+ *  VERİ GÖNDERİMİ
+ *
+ *  Tasarım ilkeleri:
+ *  - save() ÇAĞIRAN KODU HİÇ BEKLETMEZ. Katılımcı ağ yüzünden bir an
+ *    bile beklemez; gönderim arka planda yürür.
+ *  - Her save() önce localStorage'a yazar. Ağ tamamen ölse bile veri
+ *    cihazda durur ve thankScreen'deki kurtarma butonuyla gönderilebilir.
+ *  - Gönderici TEK UÇUŞLUDUR: istekler bir zincire dizilir. Paralel
+ *    gitselerdi jitter yüzünden sıra bozulur, geç kalan eski bir istek
+ *    yeni değeri ezebilirdi.
+ *  - Her denemeden önce 0-800 ms rastgele gecikme (jitter): aynı anda
+ *    başlayan katılımcıların istekleri sunucuya aynı anda yığılmasın.
+ *    Sayfa kapanırken (beacon) ve elle tekrar denemede uygulanmaz.
+ * ============================================================ */
+const ENDPOINT=''; // Staging endpoint must be configured; never defaults to production.
+
+const SEND_TIMEOUT_MS=70000;
+const JITTER_MAX_MS=800;
+const RESUME_WINDOW_MS=60*60*1000;
+/* Included before experiment initialization. The experiment's controls use
+ * this adapter; all durable data and progress share one atomic storage value. */
+const R=StudyReliability;
+const SCHEMA_VERSION=2,FRONTEND_VERSION='2026-09-27-survey-1',ASSET_VERSION='baseline-c06c3d3';
+const DEPLOYMENT_ENV='preview';
+const SESSION_KEY='slogan:'+STUDY_VERSION+':'+DEPLOYMENT_ENV+':schema'+SCHEMA_VERSION;
+let sessionStore=null,syncEngine=null,isWriter=false,releaseWriter=null,assignmentFlight=null,assignmentTimer=null;
+let assignmentController=null,renderingRestore=false,phaseController=null,phaseState=null;
+let technicalRetry=null,assignmentRejected=false,recoveredPhase=null;
+const blankProgress={stage:'',screen:'consentScreen',resumedCount:0};
+function uid(){return crypto.randomUUID();}
+function state(){return sessionStore?sessionStore.peek():null;}
+function technicalPause(code,retry){
+    if(typeof unlockPartnerScreen==='function')unlockPartnerScreen();
+    technicalRetry=retry||null;
+    let box=document.getElementById('technicalScreen');
+    if(!box){box=document.createElement('div');box.id='technicalScreen';box.className='screen';box.innerHTML='<div class="card"><h2>Lütfen bekleyiniz</h2><p id="technicalText"></p><button class="btn" id="technicalRetry">Tekrar dene</button></div>';document.getElementById('consentScreen').parentElement.appendChild(box);}
+    document.getElementById('technicalText').textContent=code==='second_tab'?'Bu çalışma başka bir sekmede açık. Devam etmek için açık olan sekmeyi kullanınız.':code==='unsupported_lock'?'Bu tarayıcıda güvenli oturum açılamadı. Lütfen güncel bir tarayıcı kullanınız.':code.startsWith('storage')?'Yanıtlar cihazınıza kaydedilemiyor. Lütfen bu sayfayı kapatmadan tarayıcı depolama ayarlarınızı kontrol ediniz.':'Bağlantı veya yükleme tamamlanamadı. Yanıtlarınız korunuyor. Lütfen tekrar deneyiniz.';
+    const b=document.getElementById('technicalRetry');b.hidden=!retry;b.onclick=()=>{if(technicalRetry)technicalRetry();};
+    document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));box.classList.add('active');
+}
+function currentContext(){const s=state();return s?{local_session_id:s.local_session_id,generation:s.generation}:null;}
+function contextValid(c){const s=state();return !!(isWriter&&c&&s&&c.local_session_id===s.local_session_id&&c.generation===s.generation&&!s.terminal);}
+function safeView(){
+    if(typeof ST==='undefined')return {};
+    const view={st:{},selection:typeof SEL==='undefined'?null:{sel:SEL,order:SEL_ORDER,a:ORDER_A,b:ORDER_B},phase:phaseState};
+    Object.keys(ST).filter(k=>!k.startsWith('_')).forEach(k=>view.st[k]=ST[k]);
+    return R.copy(view);
+}
+function checkpoint(){if(sessionStore&&isWriter&&!state().terminal)sessionStore.update(s=>{s.view=safeView();});}
+const DataSync={
+    save(patch,defer){if(renderingRestore)return this.record();if(!isWriter||!sessionStore)return null;
+        const s=state();if(s.terminal)return s.record;
+        if(s.intent==='finalize'&&s.inflight&&s.inflight.action==='finalize'&&!patch.data_withdraw_requested)return s.record;
+        if(s.record.data_withdraw_requested)patch={...patch,data_withdraw_requested:true,completed:false};
+        const out=sessionStore.save(patch,null,safeView());if(syncEngine&&!defer)syncEngine.schedule();return out.record;
+    },
+    flush(){return syncEngine?syncEngine.flush():Promise.resolve(false);},
+    beacon(){return syncEngine&&navigator.sendBeacon?syncEngine.beacon(navigator.sendBeacon.bind(navigator)):false;},
+    pid(){const s=state();return s&&s.assignment?s.assignment.pid:'';},
+    pending(){const s=state();return s&&(s.revision>s.acked_revision||s.inflight)?1:0;},
+    status(){return syncEngine?syncEngine.status():'KUYRUKTA';},
+    record(){const s=state();return s?s.record:{};},
+    recovered(){return !!(state()&&state().progress.resumedCount);},
+    counters(){return syncEngine?syncEngine.counters():{upload_attempts:0,upload_failures:0};},
+    setPid(){throw Error('PID must be bound to a verified assignment');},
+    reset(){resetLocalSession(true);}
+};
+const Progress={
+    get:()=>state()?state().progress:blankProgress,
+    setStage(stage){if(isWriter&&state()&&!state().terminal)sessionStore.update(s=>{s.progress.stage=stage;s.view=safeView();});},
+    setScreen(screen){if(isWriter&&state()&&!state().terminal)sessionStore.update(s=>{s.progress.screen=screen;s.view=safeView();});},
+    setSlogan(slogan){sessionStore.update(s=>{s.progress.slogan=slogan;s.view=safeView();});},
+    touch(){if(isWriter&&state()&&!state().terminal)sessionStore.update(s=>{if(Date.now()<s.last_activity_at)s.record.clock_anomaly=true;s.last_activity_at=Date.now();});},
+    gapMs:()=>state()?Date.now()-state().last_activity_at:0,
+    bumpResume(){sessionStore.update(s=>{s.progress.resumedCount++;});return state().progress.resumedCount;},
+    markCompleted(){sessionStore.update(s=>{s.intent='finalize';s.progress.stage='done';});},
+    isCompleted:()=>!!(state()&&(state().terminal==='completed'||state().intent==='finalize'))
+};
+function resetLocalSession(reload){
+    if(!sessionStore||!isWriter)return;
+    if(state().revision>state().acked_revision||state().inflight){technicalPause('pending_session',()=>DataSync.flush());return;}
+    if(syncEngine)syncEngine.stop();if(assignmentController)assignmentController.abort();clearTimeout(assignmentTimer);
+    if(phaseController)phaseController.abort();unlockPartnerScreen();sessionStore.newSession();
+    // Reload gives every module a new lifetime, timer set and generation.
+    location.replace(location.pathname);
+}
+function getAllocationToken(){return state().allocation_token;}
+function eligible(){const d=DataSync.record();return d.consent_given===true&&Number.isInteger(d.age)&&d.age>=AGE_MIN&&d.age<=AGE_MAX&&!!d.gender&&!!d.education&&(state().frontend_version!==FRONTEND_VERSION||DEMO_FIELDS.every(f=>f.opts.includes(d[f.key])));}
+function launchBackgroundAssignment(){return Promise.resolve(null);}
+function assignCondition(){return launchBackgroundAssignment();}
+function verifiedCondition(){return null;}
+
+function restoreState(){
+    const s=state(),r=s.record,v=s.view;
+    recoveredPhase=v.phase||null;
+    if(r.screen_visible_ms)Object.assign(activeTimes,r.screen_visible_ms);
+    if(v.st)Object.assign(ST,v.st);
+    ST.demo={age:r.age??ST.demo.age,...Object.fromEntries(DEMO_FIELDS.map(f=>[f.key,r[f.key]??ST.demo[f.key]]))};
+    if(s.assignment){ST.pid=s.assignment.pid;ST.feedbackSource=s.assignment.source;ST.feedbackValence=s.assignment.valence;ST.conditionAssignedBy='server';}
+    const flags={hiddenEventsCount:'hidden_events_count',hiddenTotalMs:'hidden_total_ms',hiddenMaxMs:'hidden_max_ms',hiddenOver30Count:'hidden_over30_count',attentionFlag:'attention_flag',longAbsenceFlag:'long_absence_flag',hiddenEventsDetail:'hidden_events_detail'};
+    Object.entries(flags).forEach(([k,f])=>{if(r[f]!==undefined)ST[k]=r[f];});
+    ST.participantTaskStartedAt=Date.parse(r.participant_task_started_iso||'')||ST.participantTaskStartedAt;
+    SURVEY_QUESTIONS.forEach((x,i)=>ST.survey['q'+(i+1)]=r['dv_control_'+x.key]??null);
+    NPI_ITEMS.forEach((x,i)=>ST.npi['q'+(i+1)]=r['npi_'+String(i+1).padStart(2,'0')]??null);
+    ST.mcheck={valence:r.mcheck_valence??null,source:r.mcheck_source??null,open:r.mcheck_open??''};
+    if(v.selection){SEL=v.selection.sel;SEL_ORDER=v.selection.order;ORDER_A=v.selection.a;ORDER_B=v.selection.b;}
+    if(s.progress.slogan){ST.slogan=s.progress.slogan.full;ST.sloganWordA=s.progress.slogan.a;ST.sloganWordB=s.progress.slogan.b;}
+    document.getElementById('demoAge').value=ST.demo.age??'';
+    DEMO_FIELDS.forEach(f=>{const p=Array.from(document.getElementById(f.el).children).findIndex(e=>e.textContent===ST.demo[f.key]);if(p>=0)selDemo(f.key,f.el,p,ST.demo[f.key]);});
+    chkDemo();
+}
+function bootResume(){
+    const s=state();if(!s)return false;
+    if(s.terminal==='completed'){resetLocalSession(true);return true;}
+    if(s.terminal==='expired'){showScreen('expiredScreen');return true;}
+    if(s.terminal==='declined'){showScreen('declineScreen');return true;}
+    if(s.terminal==='ineligible'){showScreen('minorScreen');return true;}
+    if(s.terminal==='withdrawn'){showScreen('debriefScreen');document.getElementById('withdrawNote').textContent='Talebiniz kaydedildi. Verileriniz analize dahil edilmeyecek.';return true;}
+    if(!s.record.consent_given)return false;
+    const gap=Progress.gapMs();
+    if(gap>RESUME_WINDOW_MS){sessionStore.update(n=>{n.terminal='expired';n.intent=null;n.record.resume_expired=true;n.revision++;});showScreen('expiredScreen');return true;}
+    if(gap<0)DataSync.save({clock_anomaly:true},true);
+    renderingRestore=true;try{restoreState();}finally{renderingRestore=false;}
+    recoverHiddenInterval();
+    const n=Progress.bumpResume();DataSync.save({resumed_count:n,resume_gap_ms:gap,resumed_from_screen:s.progress.screen},true);
+    launchBackgroundAssignment();
+    if(s.intent==='finalize'){restoringScreen=true;showScreen('thankScreen');restoringScreen=false;DataSync.flush();return true;}
+    if(s.intent==='withdraw'){restoringScreen=true;showScreen('debriefScreen');restoringScreen=false;requestWithdraw();return true;}
+    resumeAtStage(s.progress.stage,s.progress.screen);return true;
+}
+function resumeAtStage(stage,screen){
+    renderingRestore=true;
+    try{
+        if(screen==='sloganScreen'){showScreen(screen);buildCardsA();renderB();renderSlogan();ST._sloganStart=performance.now();return;}
+        if(screen==='npiScreen')return showNpi();if(screen==='mcheckScreen')return showMcheck();if(screen==='surveyScreen')return showSurvey();
+        if(screen==='feedbackScreen'){showScreen(screen);renderingRestore=false;DataSync.save({exposure_interrupted:true,exposure_uncertain:true,technical_valid:false});return startFeedback();}
+        if(screen==='partnerScreen'||screen==='matchScreen'){renderingRestore=false;DataSync.save({exposure_interrupted:true,exposure_uncertain:true,technical_valid:false});if(screen==='partnerScreen')return actuallyOpenPartner();showScreen(screen);return runMatching();}
+        if(screen==='billboardScreen'){renderingRestore=false;return showBillboard();}
+        if(['demoScreen','introScreen','briefScreen','instrScreen','partnerWaitScreen','preFeedbackScreen','debriefScreen'].includes(screen))return showScreen(screen);
+        showScreen('demoScreen');
+    }finally{renderingRestore=false;}
+}
+function resumeIntoPartner(){return actuallyOpenPartner();}
+function warmUpEndpoint(){} // Assignment is the only initial request, after eligibility.
+function initializeSession(){
+    try{
+        sessionStore=R.createStore({storage:localStorage,key:SESSION_KEY,uuid:uid,study:STUDY_VERSION,environment:DEPLOYMENT_ENV,frontendVersion:FRONTEND_VERSION,assetVersion:ASSET_VERSION,onError:c=>technicalPause(c)});
+        sessionStore.initialize();SESSION_START_ISO=new Date(state().started_at).toISOString();
+        syncEngine={
+            schedule(){sessionStore.update(s=>{s.acked_revision=s.revision;});},
+            async flush(){sessionStore.update(s=>{s.acked_revision=s.revision;if(s.intent==='finalize'){s.terminal='completed';s.intent=null;}if(s.intent==='withdraw'){s.terminal='withdrawn';s.intent=null;}});updateCompletionStatus();return true;},
+            beacon(){return false;},stop(){},status(){return 'LOCAL_PREVIEW';},counters(){return {upload_attempts:0,upload_failures:0};}
+        };
+        buildDevUI();buildDemo();const resumed=bootResume();if(!resumed&&IN_APP_BROWSER)showScreen('inappScreen');
+        if(DataSync.pending())DataSync.flush();
+    }catch(e){technicalPause(e.message.startsWith('storage')?e.message:'storage_initialization');}
+}
+function bootStudy(){
+    R.acquireWriter(navigator.locks,SESSION_KEY,release=>{isWriter=true;releaseWriter=release;initializeSession();},code=>technicalPause(code));
+}
+
+
+/* ============================================================
+ *  GÖRÜNÜRLÜK / KESİNTİ YÖNETİMİ
+ *
+ *  Katılımcı sekmeyi değiştirdiğinde ya da telefon geldiğinde
+ *  animasyon zinciri arkada akmaya devam ederse, geri döndüğünde
+ *  partner aşamasını kaçırmış olur. Bekleme sayfa gizliyken askıya
+ *  alınıyor ve dönüşte KALDIĞI YERDEN sürüyor — aşama asla baştan
+ *  başlamıyor.
+ * ============================================================ */
+const HIDDEN_LONG_MS=30*1000;        /* "uzun kesinti" eşiği */
+const HIDDEN_FLAG_COUNT=3;           /* bu kadar uzun kesinti → attention_flag */
+const HIDDEN_ABSENCE_MS=5*60*1000;   /* bunun üstü → long_absence_flag */
+const HIDDEN_DETAIL_MAX=50;          /* satır şişmesin */
+
+let _hiddenAt=null;
+
+function waitVisible(){
+    if(!document.hidden) return Promise.resolve();
+    return new Promise(function(res){
+        const h=function(){
+            if(!document.hidden){document.removeEventListener('visibilitychange',h);res();}
+        };
+        document.addEventListener('visibilitychange',h);
+    });
+}
+
+function noteHidden(ms,detail={},extra={}){
+    ST.hiddenEventsCount++;
+    ST.hiddenTotalMs+=ms;
+    if(ms>ST.hiddenMaxMs) ST.hiddenMaxMs=ms;
+
+    const wasFlagged=ST.attentionFlag||ST.longAbsenceFlag;
+    if(ms>HIDDEN_LONG_MS){
+        ST.hiddenOver30Count++;
+        if(ST.hiddenOver30Count>=HIDDEN_FLAG_COUNT) ST.attentionFlag=true;
+    }
+    if(ms>HIDDEN_ABSENCE_MS) ST.longAbsenceFlag=true;
+
+    if(ST.hiddenEventsDetail.length<HIDDEN_DETAIL_MAX){
+        ST.hiddenEventsDetail.push({screen:ST.hiddenStartedScreen||_curScreen,ms:ms,...detail});
+    }
+    log('gizli kaldı:',Math.round(ms/1000)+'sn','ekran='+_curScreen);
+
+    /* Bayrak YENİ yandıysa hemen kaydet — katılımcı deneyi yarım
+       bırakırsa bile işaret sunucuya ulaşsın. */
+    DataSync.save({...visibilityFields(),...extra},true);
+
+    /* Partner aşamasına dönüşte sayfa donmuş görünmesin */
+    if(_curScreen==='partnerScreen'&&ms>1500) showReconnectBlip();
+}
+
+function visibilityFields(){
+    return {
+        hidden_events_count:ST.hiddenEventsCount,
+        hidden_total_ms:ST.hiddenTotalMs,
+        hidden_max_ms:ST.hiddenMaxMs,
+        hidden_over30_count:ST.hiddenOver30Count,
+        attention_flag:ST.attentionFlag,
+        long_absence_flag:ST.longAbsenceFlag,
+        hidden_events_detail:ST.hiddenEventsDetail
+    };
+}
+
+/* Yeniden bağlanma göstergesi. runPartner da aynı öğeyi kullanıyor;
+   jeton sayesinde eski bir zaman aşımı yenisini kapatamıyor. */
+let _blipId=0;
+function setReconnect(on,autoHideMs){
+    const rc=document.getElementById('popupReconnect');
+    if(!rc) return;
+    const id=++_blipId;
+    rc.style.display=on?'block':'none';
+    if(on&&autoHideMs){
+        setTimeout(function(){if(_blipId===id) rc.style.display='none'},autoHideMs);
+    }
+}
+function showReconnectBlip(){setReconnect(true,1400)}
+
+/* The wall timestamp survives page destruction; performance.now never crosses
+   page lifetimes. A recovered interval is explicitly an estimate. */
+function recoverHiddenInterval(){
+    if(!isWriter||!state()||state().terminal||document.hidden||!Number.isFinite(ST.hiddenStartedAt))return;
+    const wall=Date.now()-ST.hiddenStartedAt;
+    const mono=_hiddenAt===null?null:Math.round(performance.now()-_hiddenAt);
+    const clockChanged=wall<0||(mono!==null&&Math.abs(wall-mono)>1000);
+    const estimated=mono===null||clockChanged;
+    const ms=Math.max(0,mono!==null&&!clockChanged?mono:wall);
+    const detail=estimated?{estimated:true,reason:mono===null?'page_restore':'clock_disagreement',wall_ms:wall,monotonic_ms:mono}:{};
+    _hiddenAt=null;ST.hiddenStartedAt=null;
+    noteHidden(ms,detail,clockChanged?{clock_anomaly:true}:{});
+}
+document.addEventListener('visibilitychange',function(){
+    if(!isWriter||!state()||state().terminal)return;
+    if(document.hidden){
+        if(!Number.isFinite(ST.hiddenStartedAt)){
+            _hiddenAt=performance.now();ST.hiddenStartedAt=Date.now();ST.hiddenStartedScreen=_curScreen;
+            DataSync.save(visibilityFields(),true);
+        }
+        document.body.classList.add('is-hidden');
+        DataSync.beacon();
+    }else{
+        document.body.classList.remove('is-hidden');
+        recoverHiddenInterval();
+        if(Progress.gapMs()<=RESUME_WINDOW_MS)Progress.touch();
+    }
+});
+window.addEventListener('pagehide',function(){DataSync.beacon()});
+window.addEventListener('online',function(){DataSync.flush({noJitter:true})});
+
+
+/* ============================================================
+ *  İLERLEME
+ *
+ *  Mobil tarayıcılar sekmeyi bellek baskısında kendiliğinden atıyor;
+ *  kazara yenileme ve gelen telefon da eklenince katılımcıların bir
+ *  bölümü akışın ortasında sayfayı yeniden yüklüyor. Bu modül nerede
+ *  kalındığını yerelde tutar, böylece baştan başlatmak yerine kaldığı
+ *  yerden devam ettirebiliriz.
+ *
+ *  Yalnız yerel — sunucuya gönderilmez. Analiz alanları (resumed_count,
+ *  resumed_from_screen, resume_gap_ms) bootResume() içinde yazılır.
+ * ============================================================ */
+
+/* ============================================================
+ *  KOŞUL ATAMA (between-subjects 2x2)
+ *
+ *  Atama SUNUCUDA, en az atama yapılmış hücreler arasında rastgele yapılır.
+ *  Uygun demografi sonrası arka planda başlar. Ağ hatasında aynı token
+ *  yeniden denenir; geçerli sunucu koşulu olmadan koşullu içerik gösterilmez.
+ * ============================================================ */
+const CONDS=['human_positive','human_negative','ai_positive','ai_negative'];
+/* 8 sn yetmiyordu: ilk istek Apps Script konteyneri soğukken gidiyor ve
+   telefon o sırada hâlâ sayfa varlıklarını indiriyor olabiliyor. */
+const ASSIGN_TIMEOUT_MS=70000;
+const ASSIGN_MAX_TRIES=2;
+const ASSIGN_RETRY_DELAY_MS=1000;
+
+/* Bölüm 3.1 — hafif imza, kütüphane yok.
+   Benzersiz DEĞİLDİR (aynı model telefon aynı imzayı üretir); yalnızca
+   geri dönen katılımcıya aynı koşulu vermek için kullanılır. */
+function makeFingerprint(){
+    const s=[
+        navigator.userAgent,
+        navigator.language,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        screen.width+'x'+screen.height,
+        screen.colorDepth,
+        window.devicePixelRatio,
+        navigator.hardwareConcurrency||'',
+        navigator.maxTouchPoints||''
+    ].join('|');
+    let h=0;
+    for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
+    return 'fp'+Math.abs(h).toString(36);
+}
+
+
+
+/* DEV: ?cond=human_positive gibi TAM eşleşme. Kısmi/serbest metin yok sayılır. */
+function devForcedCondition(){
+    if(!DEV_MODE) return null;
+    const raw=new URLSearchParams(location.search).get('cond');
+    if(!raw||CONDS.indexOf(raw)===-1) return null;
+    const p=raw.split('_');
+    return {source:p[0],valence:p[1]};
+}
+
+
+/* ============================================================
+ *  DATA
+ * ============================================================ */
+/* Font options */
+const FONT_OPTS=[
+    {name:'Helvetica',css:"'Helvetica Neue',Helvetica,Arial,sans-serif"},
+    {name:'Bebas Neue',css:"'Bebas Neue','Oswald',Impact,sans-serif"},
+    {name:'Oswald',css:"'Oswald','Bebas Neue',Impact,sans-serif"},
+    {name:'Georgia',css:"Georgia,'Times New Roman',serif"},
+    {name:'Playfair Display',css:"'Playfair Display',Georgia,serif"}
+];
+
+
+/* ============================================================
+ *  STATE
+ * ============================================================ */
+let ST={
+    slogan:"",
+    sloganWordA:'',
+    sloganWordB:'',
+    sloganScreenTimeMs:0,
+    participantTaskStartedAt:0,
+    sloganAChanges:0,
+    sloganBChanges:0,
+    sloganFirstTouchMs:null,
+    brandInfoOpens:0,
+    brandInfoMs:0,
+    feedbackValence:'',          /* atamaya kadar boş — bkz. assignCondition() */
+    feedbackSource:'',
+    demo:{age:null,gender:null,education:null,student_status:null,employment_status:null},
+    survey:{q1:null,q2:null,q3:null},   /* faillik: ben / partner / birlikte */
+    npi:{},
+    mcheck:{valence:null,source:null,partnerNatural:null,open:''},
+    pid:'',
+    partnerPhaseTaps:0,
+    partnerScrollAttempts:0,
+    billboardFile:'',
+    billboardFallbackUsed:false,
+    hiddenEventsCount:0,
+    hiddenTotalMs:0,
+    hiddenMaxMs:0,
+    hiddenOver30Count:0,
+    attentionFlag:false,
+    longAbsenceFlag:false,
+    hiddenEventsDetail:[],
+    hiddenStartedAt:null,
+    fingerprint:'',
+    conditionAssignedBy:'',
+    assignAttempts:0,
+    assignMs:0,
+    duplicateSuspect:false,
+    returnCount:0,
+    problemReports:0,
+    screenTimes:{},      /* {screenId: toplam ms} */
+    lastScreen:'consentScreen',
+    sloganFontMul:1.0,   /* kutuyu doldurma oranı (0..1); 1 = tam dolu */
+    sloganColor:'#1c2433',
+    sloganFont:"'Playfair Display',Georgia,'Times New Roman',serif"
+};
+
+/* Slogan font boyutları (Word-vari) */
+const SLO_SIZES=[10,11,12,14,16,18,20,24,28,32,36,48,60,72,96,120];
+/* Slogan profesyonel renk paleti — 10x4 = 40 renk */
+const SLO_COLORS=[
+    '#000000','#1A1A1A','#333333','#4D4D4D','#666666','#808080','#999999','#B3B3B3','#CCCCCC','#FFFFFF',
+    '#7F1D1D','#991B1B','#B91C1C','#DC2626','#EA580C','#F59E0B','#EAB308','#84CC16','#22C55E','#10B981',
+    '#0F4C75','#1E40AF','#2563EB','#3B82F6','#06B6D4','#0891B2','#0E7490','#155E75','#164E63','#1F2937',
+    '#581C87','#7C3AED','#A855F7','#C084FC','#EC4899','#DB2777','#9F1239','#6B4A2A','#8B5A2B','#1c2433'
+];
+/* Partner'ın deneyeceği boyut indeksleri (12, 24, 36, 48) ve final (48) */
+const SIZE_TRY_IDX=[2,7,12,10,13,7];   /* 7 iki kez: geri dönüş = kararsızlık */
+const SIZE_FINAL_IDX=11;   /* 48pt — SLO_SIZES[11] */
+/* Partner'ın deneyeceği renk indeksleri ve final (#1c2433 = idx 39) */
+const COLOR_TRY_IDX=[0,4,21,18,21,34,28];  /* 21 iki kez; final (9) listede yok */
+const COLOR_FINAL_IDX=9; /* #FFFFFF — beyaz */
+
+/* ============================================================
+ *  HELPERS
+ * ============================================================ */
+/* Ekranda geçirilen süre — showScreen her çağrıldığında öncekinin
+   süresi ST.screenTimes'a eklenir (aynı ekrana dönülürse birikir). */
+let _curScreen='consentScreen',_curScreenAt=performance.now();
+function markScreenExit(){
+    if(!_curScreen) return;
+    const d=Math.round(performance.now()-_curScreenAt);
+    ST.screenTimes[_curScreen]=(ST.screenTimes[_curScreen]||0)+d;
+}
+const BACK_TARGETS={demoScreen:'consentScreen',introScreen:'demoScreen',briefScreen:'introScreen',partnerWaitScreen:'sloganScreen',billboardScreen:'partnerWaitScreen',preFeedbackScreen:'billboardScreen',mcheckScreen:'npiScreen'};
+const reviewForward={};
+function goBack(){
+    const target=BACK_TARGETS[_curScreen];
+    if(!target) return;
+    if(state().presented&&['sloganScreen','partnerWaitScreen','preFeedbackScreen','billboardScreen'].includes(target))return;
+    if(target==='npiScreen')return showNpi();
+    showScreen(target);
+}
+function addBackButtons(){
+    document.querySelectorAll('button').forEach(btn=>{
+        if(btn.textContent.trim()!=='Devam Et'||btn.parentElement.classList.contains('step-nav')) return;
+        const popup=btn.closest('#bgInfoPopup');
+        const screen=btn.closest('.screen');
+        if(!popup&&(!screen||!BACK_TARGETS[screen.id])) return;
+        const row=document.createElement('div');row.className='step-nav';
+        btn.before(row);
+        const back=document.createElement('button');back.className='btn btn-outline back-btn';back.type='button';
+        back.setAttribute('aria-label','Geri git');back.title='Geri git';back.textContent='←';
+        back.onclick=()=>popup?popup.classList.remove('show'):goBack();
+        row.append(back,btn);
+    });
+}
+
+new MutationObserver(addBackButtons).observe(document.body,{childList:true,subtree:true});
+addBackButtons();
+const SCREEN_PERCENT={consentScreen:0,demoScreen:5,introScreen:10,briefScreen:15,matchScreen:20,instrScreen:25,sloganScreen:30,partnerWaitScreen:40,partnerScreen:45,billboardScreen:55,preFeedbackScreen:60,feedbackScreen:65,surveyScreen:75,npiScreen:85,mcheckScreen:95,debriefScreen:99,thankScreen:100};
+function updateStudyProgress(id){
+    const p=id==='thankScreen'&&DataSync.pending()>0?99:SCREEN_PERCENT[id],el=document.getElementById('studyProgress');
+    el.hidden=p===undefined;
+    if(p===undefined)return;
+    el.setAttribute('aria-valuenow',p);document.getElementById('studyProgressText').textContent='%'+p;
+    document.getElementById('studyProgressFill').style.width=p+'%';
+}
+function showScreen(id){
+    if(!document.getElementById(id))return false;
+    if(state()&&state().presented&&['introScreen','briefScreen','matchScreen','instrScreen','sloganScreen','partnerWaitScreen','partnerScreen'].includes(id))return false;
+    if(phaseController&&phaseState&&phaseState.screen===_curScreen&&_curScreen!==id)phaseController.abort();
+    updateStudyProgress(id);
+    markScreenExit();
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    /* Kilit yalnız partner aşamasında geçerli. Buraya konuyor ki DEV
+       atlaması, devam akışı ve hata yolları dahil HER çıkışta açılsın. */
+    if(id!=='partnerScreen') unlockPartnerScreen();
+    window.scrollTo(0,0);
+    _curScreen=id;_curScreenAt=performance.now();
+    ST.lastScreen=id;
+    if(id==='briefScreen'&&!ST.participantTaskStartedAt){
+        ST.participantTaskStartedAt=Date.now();
+        DataSync.save({participant_task_started_iso:new Date(ST.participantTaskStartedAt).toISOString()},true);
+    }
+    Progress.setScreen(id);
+    DataSync.save({screen_times:ST.screenTimes,last_screen:id},true);
+    if(DEV_MODE) onScreenChangeDev(id);
+    return true;
+}
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+
+/* data-src ile bekletilen görseli yükle. Büyük arka plan görseli sayfa
+   açılışında inmemeli: onam ekranındaki assign isteğiyle bant genişliği
+   için yarışıp zaman aşımına düşmesine yol açıyordu. */
+function hydrateImage(el,src){
+    if(!el) return el;
+    const url=src||el.getAttribute('data-src');
+    if(url&&!el.getAttribute('src')) el.setAttribute('src',url);
+    return el;
+}
+/* Slogan onaylanınca arka planda indir — partner aşamasında beklenmesin */
+function preloadBackdrop(){
+    if(PREVIEW_BACKDROP) new Image().src=PREVIEW_BACKDROP;
+    /* Basılı billboard'u partner aşaması sürerken indir; billboard
+       ekranında beklenmesin. */
+    const slogan=(ST.slogan||'').trim();
+    if(slogan) resolveBillboard(slogan);
+}
+class PartnerAborted extends Error{constructor(){super('partner aborted')}}
+/* Sayfa gizliyken bekleme başlamaz; bekleme sırasında gizlenirse
+   dönüş beklenir. Zincir böylece arkada akıp bitmiyor. */
+async function pwait(ms){
+    await waitVisible();
+    await wait(ms);
+    await waitVisible();
+    if(ST._skipPartner) throw new PartnerAborted();
+}
+function countWords(s){return s.trim().split(/\s+/).filter(w=>w.length>0).length}
+
+/* ============================================================
+ *  CONSENT
+ * ============================================================ */
+
+/* Mükerrer/devam denetimi burada değil bootResume()'da yapılır; consentScreen
+   yalnızca taze ziyaretçiye gösterilir. */
+function acceptConsent(){
+    if(!isWriter||state().terminal||_curScreen!=='consentScreen')return;
+    if(DataSync.record().consent_given===true){showScreen('demoScreen');return;}
+    try{localStorage.setItem('exp_storage_probe','1');if(localStorage.getItem('exp_storage_probe')!=='1')throw Error('storage');localStorage.removeItem('exp_storage_probe')}
+    catch(e){document.getElementById('consentError').textContent='Yanıtlarınızın güvenle kaydedilebilmesi için tarayıcı depolamasına izin verip tekrar deneyiniz.';return}
+    ST.consentTimeMs=Math.round(performance.now()-SESSION_T0);
+    return startExperiment();
+}
+
+function startExperiment(){
+    const btn=document.getElementById('consentAccept');
+    if(btn.disabled) return;
+    btn.disabled=true;
+    document.getElementById('consentError').textContent='';
+
+    /* Pid henüz gelmediyse bu yama yerel kuyrukta bekler. assignCondition()
+       tamamlandığında pid atanır ve bütün kuyruk aynı katılımcı satırına gider. */
+    DataSync.save(Object.assign({
+        consent_given:true,
+        consent_time_ms:ST.consentTimeMs
+    },collectTelemetry()));
+
+    Progress.setStage('consent');
+    showScreen('demoScreen');
+    btn.disabled=false;
+}
+
+function declineConsent(){
+    if(!isWriter)return;sessionStore.update(s=>{s.terminal='declined';});
+    showScreen('declineScreen');
+}
+
+/* ============================================================
+ *  DEMOGRAFİK
+ *  Seçenekler tam genişlik buton — açılır menü kullanılmıyor,
+ *  telefonda tek dokunuşla seçilebilmeli.
+ * ============================================================ */
+const DEMO_FIELDS=[
+    {key:'gender',   el:'demoGender',    opts:['Kadın','Erkek','Diğer','Belirtmek istemiyorum']},
+    {key:'education',el:'demoEducation', opts:['Lise','Ön lisans','Lisans','Yüksek lisans','Doktora']},
+    {key:'student_status',el:'demoStudent',opts:['Evet','Hayır']},
+    {key:'employment_status',el:'demoEmployment',opts:['Evet, tam zamanlı çalışıyorum','Evet, yarı zamanlı çalışıyorum','Evet, kendi hesabıma / serbest çalışıyorum','Hayır, şu anda çalışmıyorum']}
+];
+/* AGE_ENTRY_MIN: girilebilir alt sınır. 18'in altı girilebilmeli ki
+   uygunsuzluk ekranı tetiklensin; 10'un altı yazım hatası sayılır. */
+const AGE_MIN=18, AGE_ENTRY_MIN=10, AGE_MAX=99;
+
+function buildDemo(){
+    DEMO_FIELDS.forEach(function(f){
+        const cont=document.getElementById(f.el);
+        if(!cont||cont.childElementCount) return;
+        f.opts.forEach(function(txt,i){
+            const b=document.createElement('button');
+            b.type='button';b.className='demo-opt';b.textContent=txt;
+            b.onclick=function(){selDemo(f.key,f.el,i,txt)};
+            cont.appendChild(b);
+        });
+    });
+}
+function selDemo(key,elId,idx,txt){
+    if(!DEMO_FIELDS.some(f=>f.key===key&&f.opts.includes(txt)))return;
+    ST.demo[key]=txt;
+    DataSync.save({[key]:txt},true);
+    const cont=document.getElementById(elId);
+    Array.prototype.forEach.call(cont.children,function(c,i){
+        c.classList.toggle('selected',i===idx);
+    });
+    chkDemo();
+}
+function onDemoAge(){
+    const raw=(document.getElementById('demoAge').value||'').trim();
+    const n=R.strictAge(raw);
+    const hint=document.getElementById('demoAgeHint');
+    ST.demo.age=n;
+    DataSync.save({age:n},true);
+    const bad=raw!==''&&(!Number.isInteger(n)||n<AGE_ENTRY_MIN||n>AGE_MAX);
+    hint.textContent=bad?('Lütfen '+AGE_ENTRY_MIN+'–'+AGE_MAX+' arası bir yaş giriniz.'):'';
+    hint.classList.toggle('bad',bad);
+    chkDemo();
+}
+function demoAgeEnterable(){
+    const a=ST.demo.age;
+    return Number.isInteger(a)&&a>=AGE_ENTRY_MIN&&a<=AGE_MAX;
+}
+function chkDemo(){
+    const done=demoAgeEnterable()&&DEMO_FIELDS.every(function(f){return !!ST.demo[f.key]});
+    document.getElementById('demoSubmit').disabled=!done;
+}
+function submitDemo(){
+    if(!isWriter||state().terminal||_curScreen!=='demoScreen'||!DataSync.record().consent_given||!demoAgeEnterable()||!DEMO_FIELDS.every(f=>f.opts.includes(ST.demo[f.key]))) return;
+    /* 18 altı: henüz sunucu ataması yapılmamıştır. Yerel oturum
+       uygunsuz işaretlenerek sonlandırılır; Google'a atama/gönderim yoktur. */
+    if(ST.demo.age<AGE_MIN){
+        log('18 yaş altı — çalışma sonlandırıldı');
+        DataSync.save({age_ineligible:true,completed:false},true);
+        sessionStore.update(s=>{s.terminal='ineligible';});
+        showScreen('minorScreen');
+        return;
+    }
+    DataSync.save({
+        age:ST.demo.age,
+        gender:ST.demo.gender,
+        education:ST.demo.education,
+        student_status:ST.demo.student_status,
+        employment_status:ST.demo.employment_status
+    });
+    Progress.setStage('demo');
+    showScreen('introScreen');
+    launchBackgroundAssignment();
+}
+function skipMatching(){ST._skipMatching=true;showScreen('instrScreen')}
+
+/* ============================================================
+ *  MATCHING
+ * ============================================================ */
+async function runMatching(){
+  const mwait=async(ms)=>{
+      await stageWait(ms);
+      if(ST._skipMatching) throw new Error('matching aborted');
+  };
+  try{
+    const txt=document.getElementById('matchText'),sub1=document.getElementById('matchSub1'),sub2=document.getElementById('matchSub2');
+    const barWrap=document.getElementById('matchBarWrap'),bar=document.getElementById('matchBar'),pct=document.getElementById('matchPct');
+    const sp=document.querySelector('#matchScreen .spinner');
+    await mwait(2000);
+    sp.style.animationPlayState='paused';
+    await mwait(1000);
+    sp.style.animationPlayState='running';
+    await mwait(2000);
+    sub1.textContent='4 kişi şu anda aktif';sub1.classList.add('show');
+    await mwait(4000);
+    txt.textContent='Partner bulundu';
+    sub1.classList.remove('show');
+    await mwait(3000);
+    sub1.textContent='Eşleşme doğrulanıyor...';sub1.classList.add('show');
+    await mwait(800);
+    sp.style.animationPlayState='paused';
+    await mwait(1500);
+    sp.style.animationPlayState='running';
+    await mwait(700);
+    sub1.classList.remove('show');
+    txt.textContent='Eşleşme doğrulanıyor...';
+    barWrap.classList.add('show');pct.classList.add('show');
+    const totalMs=4000;
+    for(const s of [{p:18,t:totalMs*0.18},{p:42,t:totalMs*0.22},{p:64,t:totalMs*0.22},{p:82,t:totalMs*0.20},{p:100,t:totalMs*0.18}]){
+        bar.style.width=s.p+'%';pct.textContent='%'+s.p;await mwait(s.t);
+    }
+    txt.textContent='Eşleşme tamamlandı!';pct.textContent='✓';pct.style.color='var(--green)';
+    sub1.textContent='Partneriniz: Deniz A.';sub1.classList.add('show');
+    document.getElementById('matchCard').classList.add('show');
+    await mwait(4000);
+    showScreen('instrScreen');
+  }catch(e){if(e.message!=='matching aborted') throw e;}
+}
+
+/* ============================================================
+ *  SLOGAN INPUT
+ * ============================================================ */
+/* Doruk marka kelime havuzu. Geçerli slogan: [İlk kelime] + [İkinci kelime] */
+/* Hangi ilk kelime hangi ikinci kelimeleri açıyor — 22 geçerli slogan.
+   Her ilk kelimede TAM 2 seçenek: slogan_option_count her katılımcıda 2. */
+const SLOGAN_MAP={
+    'Kaz Dağlarının' : ['Zirvesinden','Doruklarından'],
+    'Kaz Dağları'    : ['Tazeliği','Mucizesi'],
+    'Kaz Dağlarından': ['Özenle','Sofranıza'],
+    'Doğanın'        : ['Mucizesi','Zirvesinden'],
+    'Doğallık'       : ['Mucizesi','Dorukta'],
+    'Doruktan'       : ['Sofranıza','Evinize'],
+    'Yaşam'          : ['Pınarı','Kaynağı'],
+    'Hayatın'        : ['Kaynağı','Mucizesi'],
+    'Gençlik'        : ['Pınarı','Mucizesi'],
+    'Her Damlada'    : ['Saflık','Sağlık'],
+    'Dağ'            : ['Tazeliği','Suyu']
+};
+
+/* İlk kelime havuzu doğrudan haritadan türetilir. Ayrı bir dizi tutulsaydı
+   ikisi birbirinden kayabilirdi — nitekim "haritada anahtarı yok" testi
+   ikinci kelime kartlarına da uygulanınca hepsi soluk çizilmişti. */
+const KELIME_A=Object.keys(SLOGAN_MAP);                       /* 11 kart */
+/* Yalnızca SLOGAN_MAP'te geçen kelimeler; kullanılmayanlar çıkarıldı. */
+const KELIME_B=['Zirvesinden','Doruklarından','Tazeliği','Mucizesi','Özenle','Sofranıza',
+                'Dorukta','Evinize','Pınarı','Kaynağı','Saflık','Sağlık','Suyu']; /* 13 kart */
+
+/* Fisher-Yates karıştırma — her oturumda kart sırasını rastgele yap ki
+   aynı eksende sıralı kelimeler anlamlı cümle oluşturmasın */
+function shuffleInPlace(arr){
+    for(let i=arr.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+}
+
+let SEL={A:null,B:null};      /* seçili kelime metinleri | null */
+let SEL_ORDER=[];             /* seçim sırası (geri al için) */
+let ORDER_A=[],ORDER_B=[];    /* karıştırılmış görüntüleme sıraları */
+
+function initSlogan(){
+    SEL={A:null,B:null};
+    SEL_ORDER=[];
+    ST.slogan='';ST.sloganWordA='';ST.sloganWordB='';
+    ST.sloganAChanges=0;ST.sloganBChanges=0;
+    ST.sloganFirstTouchMs=null;
+    ST.brandInfoOpens=0;ST.brandInfoMs=0;
+    ST._sloganStart=performance.now();
+    ORDER_A=shuffleInPlace(KELIME_A.slice());
+    ORDER_B=shuffleInPlace(KELIME_B.slice());
+    buildCardsA();
+    renderB();
+    renderSlogan();
+    showOnboard();
+}
+
+function makeCard(word,onTap){
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='kelime-card';
+    btn.dataset.word=word;
+    btn.textContent=word;
+    btn.onclick=onTap;
+    return btn;
+}
+function buildCardsA(){
+    const cont=document.getElementById('cardsA');
+    if(!cont) return;
+    cont.innerHTML='';
+    ORDER_A.forEach(function(w){cont.appendChild(makeCard(w,function(){tapA(w)}))});
+}
+
+/* Seçili A'nın açtığı B kelimeleri, EKRANDA GÖRÜNDÜKLERİ SIRAYLA.
+   Hem render hem sıra telemetrisi bunu kullanır — ikisi ayrı hesaplanırsa
+   kaydedilen konum ile gösterilen konum birbirinden kayabilir. */
+function displayedB(){
+    const opts=SEL.A?SLOGAN_MAP[SEL.A]:null;
+    if(!opts) return [];
+    /* Oturum başındaki karıştırılmış havuz sırasını koru */
+    return ORDER_B.filter(function(w){return opts.indexOf(w)!==-1});
+}
+
+/* İkinci kelime paneli YALNIZCA seçilen A'nın açtığı kelimelerle çizilir.
+   Diğerleri hiç render EDİLMEZ; soluk gösterilmeleri güçlü bir kısıtlama
+   sinyali verir ve faillik algısını düşürür. */
+function renderB(){
+    const cont=document.getElementById('cardsB');
+    const hint=document.getElementById('cardsBHint');
+    if(!cont) return;
+    cont.innerHTML='';
+    const shown=displayedB();
+    if(!shown.length){
+        /* İlk kelime seçilmeden de tüm ikinci kelimeler GÖRÜNÜR (seçilemez).
+           Önce boş bırakılıyordu; katılımcı ilk kelimeyi kör seçiyordu. */
+        if(hint) hint.style.display='block';
+        ORDER_B.forEach(function(w){
+            const c=makeCard(w,null);
+            c.className+=' kelime-card--preview';
+            c.disabled=true;
+            cont.appendChild(c);
+        });
+        cont.classList.remove('reveal');
+        return;
+    }
+    if(hint) hint.style.display='none';
+    shown.forEach(function(w){cont.appendChild(makeCard(w,function(){tapB(w)}))});
+    cont.classList.remove('reveal');
+    void cont.offsetWidth;            /* animasyonu yeniden tetikle */
+    cont.classList.add('reveal');
+}
+
+function noteFirstTouch(){
+    if(ST.sloganFirstTouchMs==null){
+        ST.sloganFirstTouchMs=Math.round(performance.now()-(ST._sloganStart||performance.now()));
+    }
+}
+
+function tapA(word){
+    if(state().presented||!SLOGAN_MAP[word])return;
+    noteFirstTouch();
+    if(SEL.A===word) return;          /* aynı karta tekrar dokunma bir şey değiştirmez */
+    if(SEL.A!==null) ST.sloganAChanges++;
+    SEL.A=word;
+    /* A değişti → B seçimi geçersiz, panel yeniden çizilir */
+    SEL.B=null;
+    SEL_ORDER=SEL_ORDER.filter(function(g){return g!=='B'});
+    if(SEL_ORDER.indexOf('A')===-1) SEL_ORDER.push('A');
+    renderB();
+    renderSlogan();
+}
+function tapB(word){
+    if(state().presented||!SLOGAN_MAP[SEL.A]||!SLOGAN_MAP[SEL.A].includes(word))return;
+    noteFirstTouch();
+    if(SEL.B===word) return;
+    if(SEL.B!==null) ST.sloganBChanges++;
+    SEL.B=word;
+    if(SEL_ORDER.indexOf('B')===-1) SEL_ORDER.push('B');
+    renderSlogan();
+}
+
+function undoCard(){
+    if(SEL_ORDER.length===0) return;
+    const g=SEL_ORDER.pop();
+    SEL[g]=null;
+    if(g==='A'){SEL.B=null;SEL_ORDER=SEL_ORDER.filter(function(x){return x!=='B'});}
+    renderB();
+    renderSlogan();
+}
+function clearCards(){
+    SEL={A:null,B:null};
+    SEL_ORDER=[];
+    renderB();
+    renderSlogan();
+}
+function selText(g){return SEL[g]}
+function composeSlogan(){
+    return [SEL.A,SEL.B].filter(function(x){return x!=null}).join(' ');
+}
+function isValidSlogan(){return !!(SLOGAN_MAP[SEL.A]&&SLOGAN_MAP[SEL.A].includes(SEL.B))}
+function sloganOptionCount(){return SEL.A&&SLOGAN_MAP[SEL.A]?SLOGAN_MAP[SEL.A].length:0}
+
+function renderSlogan(){
+    ['cardsA','cardsB'].forEach(function(id,gi){
+        const cont=document.getElementById(id);
+        if(!cont) return;
+        const sel=gi===0?SEL.A:SEL.B;
+        Array.prototype.forEach.call(cont.children,function(btn){
+            btn.classList.toggle('picked',btn.dataset.word===sel);
+        });
+    });
+    const text=composeSlogan();
+    const prev=document.getElementById('sloganPreview');
+    if(text){prev.textContent=text;prev.classList.remove('empty');}
+    else{prev.textContent='Kartlara dokunarak sloganınızı oluşturun';prev.classList.add('empty');}
+    ST.slogan=text;
+    ST.sloganWordA=SEL.A||'';
+    ST.sloganWordB=SEL.B||'';
+    document.getElementById('confirmBtn').disabled=!isValidSlogan();
+    if(!renderingRestore)checkpoint();
+}
+/* Marka bilgilerine kaç kez ve ne kadar bakıldığı — brief'i ne ölçüde
+   kullandığı slogan seçimini açıklayabilir. */
+let _brandInfoOpenedAt=null;
+function openBrandInfo(){
+    const o=document.getElementById('brandInfoPopup');
+    if(!o||o.classList.contains('show')) return;
+    o.classList.add('show');
+    ST.brandInfoOpens++;
+    _brandInfoOpenedAt=performance.now();
+}
+function closeBrandInfo(){
+    const o=document.getElementById('brandInfoPopup');
+    if(!o||!o.classList.contains('show')) return;
+    o.classList.remove('show');
+    if(_brandInfoOpenedAt!=null){
+        ST.brandInfoMs+=performance.now()-_brandInfoOpenedAt;
+        _brandInfoOpenedAt=null;
+    }
+}
+
+function showOnboard(){const o=document.getElementById('sloganOnboard');if(o) o.classList.add('show');}
+function closeOnboard(){const o=document.getElementById('sloganOnboard');if(o) o.classList.remove('show');}
+function handleSloganConfirm(){
+    if(_curScreen!=='sloganScreen'||state().presented||!isValidSlogan()) return;
+    closeBrandInfo();          /* açık kaldıysa süresi sayılsın */
+    ST.sloganScreenTimeMs=Math.round(performance.now()-(ST._sloganStart||performance.now()));
+
+    /* Kayıt #3 — slogan onaylandı */
+    DataSync.save({
+        slogan_full:ST.slogan,
+        slogan_word_a:ST.sloganWordA,
+        slogan_word_b:ST.sloganWordB,
+        /* Seçilen A kelimesinin sunduğu B seçeneği sayısı. Liste
+           kesinleştikten sonra her katılımcıda 2; alan yine de
+           kaydediliyor ki harita ileride değişirse iz kalsın. */
+        slogan_option_count:sloganOptionCount(),
+        /* Sıra etkisi kontrolü: kartlar her oturumda karıştırıldığı için
+           "ilk sıradaki daha çok mu seçiliyor" ancak gösterilen sıra
+           kaydedilirse sınanabilir. A için tam sıra (seçilenin konumu
+           slogan_word_a ile eşleştirilerek bulunur), B için doğrudan
+           konum (1 tabanlı; slogan_option_count paydayı veriyor). */
+        pool_order_a:ORDER_A.slice(),
+        slogan_word_b_position:displayedB().indexOf(ST.sloganWordB)+1,
+        slogan_a_changes:ST.sloganAChanges,
+        slogan_b_changes:ST.sloganBChanges,
+        slogan_time_ms:ST.sloganScreenTimeMs,
+        participant_duration_ms:ST.participantTaskStartedAt?Math.max(0,Date.now()-ST.participantTaskStartedAt):'',
+        slogan_first_touch_ms:ST.sloganFirstTouchMs,
+        brand_info_opens:ST.brandInfoOpens,
+        brand_info_ms:Math.round(ST.brandInfoMs)
+    });
+
+    /* Billboard slogana bağlı — devam edilecekse geri yüklenebilmeli */
+    Progress.setSlogan({full:ST.slogan,a:ST.sloganWordA,b:ST.sloganWordB});
+    Progress.setStage('slogan');
+    preloadBackdrop();
+    showScreen('partnerWaitScreen');
+}
+
+/* ============================================================
+ *  PARTNER AŞAMASI
+ * ============================================================ */
+function skipPartner(){
+    ST._skipPartner=true;      /* pwait() PartnerAborted firlatip zinciri kesecek */
+    finishPartnerStage();
+}
+
+/* Katılımcı bu ekranda hiçbir kontrole dokunamaz; denemeleri sabırsızlık
+   göstergesi olarak sayılır. Sorun Bildir butonu bunun dışında. */
+let _partnerTapBound=false;
+function bindPartnerTapCounter(){
+    if(_partnerTapBound) return;
+    _partnerTapBound=true;
+    const scr=document.getElementById('partnerScreen');
+    if(!scr) return;
+    scr.addEventListener('click',function(e){
+        if(e.target.closest('#devSkipBtn')) return;
+        ST.partnerPhaseTaps++;
+    },true);
+}
+
+/* ============================================================
+ *  PARTNER AŞAMASINDA EKRAN KİLİDİ
+ *  Dokunuşlar hâlâ sayılıyor (sabırsızlık göstergesi) ama hiçbir
+ *  şeye yol açmıyor. Kaydırma denemeleri ayrıca sayılıyor.
+ * ============================================================ */
+let _partnerLocked=false, _gestureCounted=false;
+function onLockTouchStart(){_gestureCounted=false;}
+function onLockTouchMove(e){
+    /* Bir kaydırma hareketi onlarca touchmove üretir; parmak başına
+       bir kez sayılsın diye bayrak kullanılıyor. */
+    if(!_gestureCounted){_gestureCounted=true;ST.partnerScrollAttempts++;}
+    e.preventDefault();
+}
+function onLockWheel(e){e.preventDefault();}
+function lockPartnerScreen(){
+    if(_partnerLocked) return;
+    _partnerLocked=true;
+    document.body.classList.add('partner-locked');
+    /* passive:false ZORUNLU — passive dinleyicide preventDefault yok sayılır
+       ve iOS kaydırmaya devam eder. */
+    document.addEventListener('touchstart',onLockTouchStart,{passive:true});
+    document.addEventListener('touchmove',onLockTouchMove,{passive:false});
+    document.addEventListener('wheel',onLockWheel,{passive:false});
+}
+function unlockPartnerScreen(){
+    if(!_partnerLocked) return;
+    _partnerLocked=false;
+    document.body.classList.remove('partner-locked');
+    document.removeEventListener('touchstart',onLockTouchStart);
+    document.removeEventListener('touchmove',onLockTouchMove);
+    document.removeEventListener('wheel',onLockWheel);
+}
+
+
+
+function showBgInfo(){document.getElementById('bgInfoPopup').classList.add('show');}
+function proceedFromBgInfo(){
+    document.getElementById('bgInfoPopup').classList.remove('show');
+    openPartnerStage();
+}
+async function openPartnerStage(){
+    /* Önce ön popup */
+    const pre=document.getElementById('prePartnerPopup');
+    pre.classList.add('show');
+    await stageWait(3500);
+    pre.classList.remove('show');
+    actuallyOpenPartner();
+}
+function actuallyOpenPartner(){
+    hydrateImage(document.getElementById('bbMiniImg'),PREVIEW_BACKDROP);
+    bindPartnerTapCounter();
+    /* Arka plan seçimi kaldırıldı — görsel sabit. */
+    /* Boyut grid */
+    const sg=document.getElementById('sizeGrid');
+    if(sg){
+        sg.innerHTML='';
+        SLO_SIZES.forEach((s,i)=>{
+            const el=document.createElement('div');
+            el.className='size-opt';el.id='sz-'+i;el.textContent=s;
+            sg.appendChild(el);
+        });
+    }
+    document.getElementById('sizeCurrent').textContent='24 pt';
+    /* Renk paleti */
+    const cg=document.getElementById('sloColorRow');
+    if(cg){
+        cg.innerHTML='';
+        SLO_COLORS.forEach((c,i)=>{
+            const sw=document.createElement('div');
+            sw.className='cp-cell';sw.id='sc-'+i;sw.style.background=c;
+            cg.appendChild(sw);
+        });
+    }
+    document.getElementById('pcSwatch').style.background='#1c2433';
+    document.getElementById('pcHex').textContent='#1C2433';
+    /* Font ailesi seçenekleri */
+    const fo=document.getElementById('fontOptions');
+    if(fo){
+        fo.innerHTML='';
+        FONT_OPTS.forEach((f,i)=>{
+            const el=document.createElement('div');
+            el.className='font-opt';el.id='fo-'+i;
+            el.textContent=f.name;el.style.fontFamily=f.css;
+            fo.appendChild(el);
+        });
+    }
+    document.getElementById('fontCurrent').textContent='Playfair Display';
+    /* Önizleme — varsayılan değerlerle */
+    ST.sloganFontMul=ST.sloganFontMul||1.0;
+    ST.sloganColor=ST.sloganColor||'#1c2433';
+    ST._showPreview=false; /* slogan, partner boyut ayarlamaya başlayana kadar görünmez */
+    setTimeout(updateMiniPreview,100);
+    showScreen('partnerScreen');
+    lockPartnerScreen();          /* showScreen'DEN SONRA: o da kilidi açıyor */
+    ST._partnerStart=performance.now();
+    if(!recoveredPhase)ST.partnerPhaseTaps=0;
+    startCollabClock();
+    runPartner();
+}
+function updateMiniPreview(){
+    const t=document.getElementById('bbMiniText');
+    if(!t) return;
+    const img=document.querySelector('#bbMini img');
+    if(!img) return;
+    if(!img.complete||!img.naturalWidth){
+        img.addEventListener('load',updateMiniPreview,{once:true});return;
+    }
+    syncStageHeight();
+    if(!placeSloganOverlay(t,img)) return;
+    if(ST.sloganFont) t.style.fontFamily=ST.sloganFont;
+    const slogan=sloganDisplayText();
+    /* Slogan, partner boyut ayarlamaya başlayana kadar billboard'da görünmez */
+    if(!slogan || !ST._showPreview){t.textContent='';return;}
+    t.textContent=slogan;
+    fitSloganOverlay(t);
+    t.style.color=ST.sloganColor||'#1c2433';
+    const blendM=blendForColor(ST.sloganColor);
+    t.style.mixBlendMode=blendM;
+    t.style.textShadow = blendM==='normal' ? '0 1px 5px rgba(0,0,0,0.45)' : '';
+}
+/* Sabit önizlemenin gerçek yüksekliği: kontroller ortalanırken altında
+   kalmasınlar diye scroll-margin-top buna bağlı. */
+function syncStageHeight(){
+    const st=document.getElementById('collabStage');
+    if(!st||!st.offsetHeight) return;
+    document.documentElement.style.setProperty('--stage-h',(st.offsetHeight+12)+'px');
+}
+window.addEventListener('resize',syncStageHeight);
+
+/* Açık renklerde (beyaz vb.) multiply yazıyı görünmez yapar → normal blend kullan */
+function blendForColor(col){
+    const hex=(col||'').replace('#','').trim();
+    let r,g,b;
+    if(hex.length===3){r=parseInt(hex[0]+hex[0],16);g=parseInt(hex[1]+hex[1],16);b=parseInt(hex[2]+hex[2],16);}
+    else if(hex.length===6){r=parseInt(hex.slice(0,2),16);g=parseInt(hex.slice(2,4),16);b=parseInt(hex.slice(4,6),16);}
+    else return 'multiply';
+    const lum=0.2126*r+0.7152*g+0.0722*b;
+    return lum>200 ? 'normal' : 'multiply';
+}
+/* ============================================================
+ *  ORTAK ÇALIŞMA PRİMİTİFLERİ
+ *  "Birlikte düzenleme" metaforu: partnerin hangi kontrol üzerinde
+ *  çalıştığı, kontrolün üstüne yapışan etiketle gösteriliyor.
+ *  Dokunmatik cihazda imleç metaforu zaten anlamsızdı.
+ * ============================================================ */
+function collabStatus(txt){
+    const el=document.getElementById('collabStatusText');
+    if(el) el.textContent=txt;
+}
+function collabTyping(on){
+    const el=document.getElementById('collabTyping');
+    if(el) el.classList.toggle('on',!!on);
+}
+/* Etiketi hedef kontrolün sağ üstüne taşı */
+function moveBadgeTo(el){
+    const badge=document.getElementById('collabBadge');
+    const wrap=document.querySelector('#partnerScreen .collab-wrap');
+    if(!badge||!wrap||!el) return;
+    const wr=wrap.getBoundingClientRect(),tr=el.getBoundingClientRect();
+    badge.style.left=(tr.right-wr.left-badge.offsetWidth-6)+'px';
+    badge.style.top=(tr.top-wr.top-badge.offsetHeight+4)+'px';
+    badge.classList.add('on');
+}
+/* Kontrolü görünür alana getir, vurgula, etiketi yapıştır, bekle */
+async function partnerFocus(controlId,ms){
+    const el=document.getElementById(controlId);
+    if(!el) return;
+    document.querySelectorAll('#partnerScreen .collab-ctl')
+        .forEach(function(c){c.classList.remove('collab-active')});
+    try{el.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}
+    el.classList.add('collab-active');
+    moveBadgeTo(el);
+    await pwait(ms==null?600:ms);
+}
+/* Bir seçeneği vurgula (deneme) — henüz seçilmedi.
+   Aynı gruptaki önceki deneme izi ÖNCE silinir: iki seçenek birden
+   vurgulu kalırsa partner iki yeri aynı anda seçmiş gibi görünür.
+   Temizlik burada, çağıranda değil — gezinme dizisi ile final seçim
+   iki ayrı yol olduğu için birinde unutulması kolaydı. */
+async function partnerTry(el,ms){
+    if(!el) return;
+    if(el.parentElement){
+        el.parentElement.querySelectorAll('.trying')
+            .forEach(function(o){o.classList.remove('trying')});
+    }
+    el.classList.add('trying');
+    moveBadgeTo(el);
+    await pwait(ms==null?450:ms);
+}
+/* Seçeneği kesinleştir: gruptaki tüm deneme/seçim izleri temizlenir.
+   Final seçim deneme dizisinin sonu olmadığı için yalnız final'den
+   sınıf kaldırmak son denenen seçeneği vurgulu bırakırdı. */
+function partnerPick(groupSel,el){
+    document.querySelectorAll(groupSel).forEach(function(o){
+        o.classList.remove('trying');o.classList.remove('picked');
+    });
+    if(el) el.classList.add('picked');
+}
+/* ============================================================
+ *  PARTNER TEMPOSU
+ *
+ *  Deniz A. bu görevi ilk kez yapıyor: aracı tanımıyor, ne
+ *  istediğini baştan bilmiyor, denedikçe karar veriyor.
+ *
+ *  Bunu üretenler:
+ *    · her kontrole dokunmadan önce bir duraksama (nereden başlasam)
+ *    · düz tarama değil, ileri geri gezinen bir sıra
+ *    · AYNI seçeneğe geri dönme — "az önceki daha iyiydi galiba"
+ *    · dizinin ortasında yazma göstergesinin sönmesi (düşünüyor)
+ *    · ara sıra uzun takılma; çoğu adım kısa, biri belirgin uzun
+ *    · seçim yapmadan hemen önce son bir tereddüt
+ *    · en sonda yaptıklarını gözden geçirme
+ *
+ *  Toplam süre ~34 sn'den ~60 sn'ye çıkıyor. Katılımcının bekleme
+ *  eşiği için üst sınır bu; daha uzunu sıkıcı olur ve sekme
+ *  değiştirme (hidden_events_count) artar.
+ * ============================================================ */
+function rnd(min,max){return min+Math.random()*(max-min)}
+
+/* Düşünme molası: yazma göstergesi söner, sonra geri yanar.
+   Duraksamanın "ara verdi" gibi okunmasını sağlayan şey bu sönme. */
+async function partnerThink(min,max){
+    collabTyping(false);
+    await pwait(rnd(min,max));
+    collabTyping(true);
+}
+
+/* Bir seçenek dizisini tereddütle gezer.
+   seq içinde TEKRAR EDEN indeksler kasıtlı: geri dönüş = kararsızlık.
+   pauseAt: kaçıncı adımdan sonra düşünme molası verilecek. */
+async function partnerBrowse(seq,idToEl,apply,pauseAt){
+    for(let k=0;k<seq.length;k++){
+        const el=idToEl(seq[k]);
+        if(!el) continue;
+        /* Çoğu deneme kısa; ~beşte biri belirgin uzun (takıldı) */
+        const long=Math.random()<0.22;
+        await partnerTry(el,long?rnd(900,1400):rnd(320,560));
+        apply(seq[k]);
+        await pwait(long?rnd(700,1000):rnd(380,620));
+        if(k===pauseAt) await partnerThink(1100,1900);
+    }
+}
+
+function setSwatch(hex){
+    const sw=document.getElementById('pcSwatch'),hx=document.getElementById('pcHex');
+    if(sw) sw.style.background=hex;
+    if(hx) hx.textContent=hex.toUpperCase();
+}
+
+/* Başlıktaki geçen süre sayacı — önceden belli bir toplam göstermiyor */
+let _collabClockId=null;
+function startCollabClock(){
+    const el=document.getElementById('collabClock');
+    const t0=performance.now();
+    stopCollabClock();
+    _collabClockId=setInterval(function(){
+        if(!el) return;
+        const sec=Math.floor((performance.now()-t0)/1000);
+        el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+    },1000);
+}
+function stopCollabClock(){
+    if(_collabClockId){clearInterval(_collabClockId);_collabClockId=null;}
+}
+
+async function runPartner(){
+    const showReconnect=function(on){setReconnect(on)};
+  try{
+    /* 1. Bağlantı */
+    collabStatus('Bağlanıyor…');
+    await pwait(1800);
+    await pwait(450);
+    showReconnect(true);collabStatus('Yeniden bağlanılıyor…');
+    await pwait(1500);
+    showReconnect(false);
+
+    /* 2. Partner sloganı ve görseli inceliyor */
+    collabStatus('Deniz A. sloganı ve görseli inceliyor…');
+    collabTyping(true);
+    await partnerFocus('bbMini',850);
+    await pwait(1500);
+    await partnerThink(1200,1800);      /* ne yapacağını düşünüyor */
+    await pwait(1200);
+    collabTyping(false);
+
+    showReconnect(true);collabStatus('Yeniden bağlanılıyor…');
+    await pwait(1300);showReconnect(false);
+
+    /* 3. YAZI BOYUTU
+       Sıra kasıtlı olarak düz değil: küçükten başlıyor, fazla büyütüyor,
+       geri dönüyor, tekrar büyütüyor. 7'ye ikinci kez uğraması kararsızlık. */
+    const sizeCur=document.getElementById('sizeCurrent');
+    const applySize=function(i){
+        const v=SLO_SIZES[i];
+        if(sizeCur) sizeCur.textContent=v+' pt';
+        ST.sloganFontMul=Math.min(1,Math.max(0.45,v/48));
+        updateMiniPreview();
+    };
+    collabStatus('Deniz A. yazı boyutunu deniyor…');
+    collabTyping(true);
+    await partnerFocus('ctlSize',750);
+    /* Slogan önizlemede BURADAN İTİBAREN görünür. Boyut aşamasına
+       kadar gizli olmasının sebebi: partner henüz hiçbir şey
+       yapmadan metnin belirmesi "zaten hazırdı" izlenimi verirdi. */
+    ST._showPreview=true;
+    updateMiniPreview();
+    await partnerThink(900,1500);       /* nereden başlasa */
+    await partnerBrowse(SIZE_TRY_IDX,
+        function(i){return document.getElementById('sz-'+i)},
+        applySize, 3);
+    await partnerThink(1000,1600);      /* seçmeden önceki son tereddüt */
+    const sizeFinalEl=document.getElementById('sz-'+SIZE_FINAL_IDX);
+    await partnerTry(sizeFinalEl,rnd(500,800));
+    partnerPick('.size-opt',sizeFinalEl);
+    applySize(SIZE_FINAL_IDX);          /* 48pt → sloganFontMul 1.0 */
+    collabTyping(false);
+    await pwait(rnd(700,1000));
+
+    /* 4. RENK */
+    const applyColor=function(i){
+        ST.sloganColor=SLO_COLORS[i];
+        setSwatch(SLO_COLORS[i]);
+        updateMiniPreview();
+    };
+    collabStatus('Deniz A. renk seçiyor…');
+    collabTyping(true);
+    await partnerFocus('ctlColor',750);
+    await partnerThink(800,1300);
+    await partnerBrowse(COLOR_TRY_IDX,
+        function(i){return document.getElementById('sc-'+i)},
+        applyColor, 4);
+    await partnerThink(900,1500);
+    const colorFinalEl=document.getElementById('sc-'+COLOR_FINAL_IDX);
+    await partnerTry(colorFinalEl,rnd(500,800));
+    partnerPick('#sloColorRow .cp-cell',colorFinalEl);
+    applyColor(COLOR_FINAL_IDX);        /* beyaz */
+    collabTyping(false);
+    await pwait(rnd(800,1100));
+
+    /* 5. YAZI TİPİ
+       Bebas Neue. Billboard görselleri de bu fontla üretiliyor; önizleme
+       ile basılı billboard birebir aynı görünmeli (Bölüm 11.1). Web fontu
+       olduğu için her cihazda aynı çiziliyor — sistem fontu seçilseydi
+       iOS'ta Helvetica, Android'de Roboto çıkıp görselle uyuşmazdı. */
+    const FONT_FINAL_IDX=1;
+    const fontOpts=document.querySelectorAll('#fontOptions .font-opt');
+    const fontCur=document.getElementById('fontCurrent');
+    const applyFont=function(i){
+        if(fontCur) fontCur.textContent=FONT_OPTS[i].name;
+        ST.sloganFont=FONT_OPTS[i].css;
+        updateMiniPreview();
+    };
+    /* Hepsini sırayla gezip sonuncuyu seçmek yerine: baştakini deniyor,
+       atlıyor, geri dönüyor. Sonunda ikinciye dönmesi — daha önce
+       gördüğü bir seçeneği hatırlayıp ona dönmesi — en doğal hâli. */
+    const fontSeq=[0,2,1,3,2,4].filter(function(i){return i<fontOpts.length});
+    collabStatus('Deniz A. yazı tipini deniyor…');
+    collabTyping(true);
+    await partnerFocus('ctlFont',700);
+    await partnerThink(800,1300);
+    await partnerBrowse(fontSeq,
+        function(i){return fontOpts[i]},
+        applyFont, 3);
+    await partnerThink(1100,1700);
+    await partnerTry(fontOpts[FONT_FINAL_IDX],rnd(500,800));
+    partnerPick('#fontOptions .font-opt',fontOpts[FONT_FINAL_IDX]);
+    applyFont(FONT_FINAL_IDX);
+    collabTyping(false);
+    await pwait(rnd(700,1000));
+
+    /* 6. Son bir gözden geçirme — işini bitirdiğinden emin olmak isteyen
+       birinin davranışı. Hiçbir seçim değişmiyor, yalnız bakıyor. */
+    collabStatus('Deniz A. tasarımı gözden geçiriyor…');
+    await partnerFocus('bbMini',rnd(900,1300));
+    await pwait(rnd(800,1200));
+
+    /* 7. Bitti */
+    collabStatus('Deniz A. son düzenlemeleri yaptı');
+    const badge=document.getElementById('collabBadge');
+    if(badge) badge.classList.remove('on');
+    document.querySelectorAll('#partnerScreen .collab-ctl')
+        .forEach(function(c){c.classList.remove('collab-active')});
+    const done=document.getElementById('popupDone');
+    if(done) done.classList.add('show');
+
+    await pwait(1800);
+  }catch(e){
+    if(e instanceof PartnerAborted) return;   /* DEV atlama */
+    throw e;
+  }
+    finishPartnerStage();
+}
+
+/* Partner aşamasından çıkış — hem normal bitiş hem DEV atlama kullanır */
+function finishPartnerStage(){
+    stopCollabClock();
+    collabTyping(false);
+    DataSync.save(Object.assign({
+        partner_duration_ms:Math.round(performance.now()-(ST._partnerStart||performance.now())),
+        partner_phase_taps:ST.partnerPhaseTaps,
+        partner_scroll_attempts:ST.partnerScrollAttempts,
+        problem_reports:ST.problemReports,
+        partner_skipped_dev:!!ST._skipPartner
+    },visibilityFields()));
+    showBillboard();
+}
+
+/* ============================================================
+ *  BILLBOARD REVEAL — perspektif slogan
+ * ============================================================ */
+
+/* ── Canlı önizleme arka planı ──
+   Partnerin önizlemesi metni CSS ile bindiriyor, bu yüzden arka plan
+   METİNSİZ olmalı. Bölüm 11'deki 22 billboard'da metin görsele basılı
+   olduğu için onlar burada kullanılamaz.
+   backdrop.jpg, 22 billboard ile AYNI sahnenin metinsiz sürümü. */
+const PREVIEW_BACKDROP='backdrop.jpg';
+
+/* ── Basılı billboard'lar ──
+   Her slogan için önceden üretilmiş görsel; metin GÖRSELE BASILI.
+   Bulunduğunda CSS metin katmanı gizlenir — iki kez yazılmamalı.
+   Bulunamazsa metinsiz arka plan + CSS katmanı devreye girer ve
+   billboard_fallback_used işaretlenir; deney asla eksik görsel
+   yüzünden durmaz. */
+const BILLBOARD_DIR='billboards/';
+const BILLBOARD_EXTS=['.jpg','.jpeg','.png'];
+
+/* Türkçe karakterleri sadeleştirip dosya adına çevir.
+   ı→i, İ→i, ğ→g, ş→s, ö→o, ü→u, ç→c; boşluk → alt çizgi. */
+function slugifyTR(str){
+    const map={'ç':'c','Ç':'c','ğ':'g','Ğ':'g','ı':'i','İ':'i',
+               'ö':'o','Ö':'o','ş':'s','Ş':'s','ü':'u','Ü':'u'};
+    return String(str||'').split('').map(function(c){
+        return map[c]!==undefined?map[c]:c;
+    }).join('').toLowerCase().trim().replace(/\s+/g,'_');
+}
+function billboardCandidates(slogan){
+    const base=BILLBOARD_DIR+'bb_'+slugifyTR(slogan);
+    return BILLBOARD_EXTS.map(function(e){return base+e});
+}
+/* Adayları sırayla dener, ilk yüklenenin adresini döner; hiçbiri
+   yoksa null. Sonuç önbelleğe alınır — önyükleme ve gösterim aynı
+   sonucu kullanır, ikinci kez ağa çıkılmaz. */
+let _billboardResolved=null;
+function resolveBillboard(slogan){
+    if(_billboardResolved&&_billboardResolved.slogan===slogan){
+        return _billboardResolved.promise;
+    }
+    const list=billboardCandidates(slogan);
+    const promise=new Promise(function(resolve){
+        let i=0;
+        (function tryNext(){
+            if(i>=list.length){resolve(null);return}
+            const url=list[i++];
+            const im=new Image();
+            im.onload=function(){resolve(url)};
+            im.onerror=function(){tryNext()};
+            im.src=url;
+        })();
+    });
+    _billboardResolved={slogan:slogan,promise:promise};
+    return promise;
+}
+
+/* Görsel & koordinatlar (bilbod2_Qr.png natural size 2752x1536) */
+/* Frontal çekim - perspektif dönüşümü gerekmiyor, basit overlay */
+const BB_NATURAL_W=1600;
+const BB_NATURAL_H=893;
+/* Slogan kutusu (orijinal slogan.html koordinatları) - QR kodunun üstü, şişenin solu.
+   Ölçüm artık nowrap+auto ile doğru yapıldığından metin bu alanı dengeli doldurur. */
+/* 16 basılı billboard ölçülerek bulundu (1600x893 üzerinden):
+   metin SOLA değil ORTAYA hizalı — sol kenar 132 px yayılırken yatay
+   merkez yalnız 46 px yayılıyor. Merkez x~682, y~349; büyük harf
+   yüksekliği ~45 px; en geniş slogan 526 px. */
+const SLOGAN_BOX={cx:682, cy:349, width:560, height:64};
+
+/* Billboard'larda font boyutu slogan uzunluğundan BAĞIMSIZ ve sabit.
+   Kutuyu doldurmaya çalışmak kısa sloganları devleştirirdi: "YAŞAM
+   PINARI..." 248 px iken 560 px'e büyütülünce basılı görselin iki
+   katından fazla olurdu. Bunun yerine görsel yüksekliğine oranlı sabit
+   boyut: 45 px büyük harf / 893 px yükseklik, Bebas Neue'nin cap-height
+   oranı (~0.73) ile font boyutuna çevrildi. */
+const SLOGAN_FONT_RATIO=(45/893)/0.73;
+
+/* Basılı billboard'larda slogan sonunda üç nokta var; önizleme ile
+   final görüntü birebir aynı görünsün diye burada da ekleniyor. */
+const SLOGAN_SUFFIX='...';
+function sloganDisplayText(){
+    const t=(ST.slogan||'').trim();
+    return t?t+SLOGAN_SUFFIX:'';
+}
+
+/* Slogan katmanını görselin üstüne yerleştirir — önizleme ve billboard
+   aynı fonksiyonu kullanır, böylece ikisi birbirinden kayamaz. */
+function placeSloganOverlay(txtEl,imgEl){
+    if(!txtEl||!imgEl) return false;
+    if(!imgEl.complete||!imgEl.naturalWidth) return false;
+    const w=imgEl.clientWidth;
+    const scale=w/BB_NATURAL_W;
+    const bw=SLOGAN_BOX.width*scale, bh=SLOGAN_BOX.height*scale;
+    txtEl.style.left=(SLOGAN_BOX.cx*scale-bw/2)+'px';
+    txtEl.style.top=(SLOGAN_BOX.cy*scale-bh/2)+'px';
+    txtEl.style.width=bw+'px';
+    txtEl.style.height=bh+'px';
+    /* Partnerin seçtiği boyut oranı (48pt finalde 1.0) */
+    const mul=Math.max(0.35,Math.min(1,ST.sloganFontMul||1));
+    txtEl.style.fontSize=(imgEl.clientHeight*SLOGAN_FONT_RATIO*mul)+'px';
+    txtEl.style.whiteSpace='nowrap';
+    txtEl.style.textAlign='center';
+    /* İç payı düşerek gerçek kullanılabilir genişlik; fitSloganOverlay okuyor */
+    txtEl.dataset.boxw=String(Math.max(0,bw-4));
+    return true;
+}
+
+/* Ölçüm için gizli ikiz. Katmanın kendisi flex + overflow:hidden
+   olduğu için scrollWidth ortalanmış taşmayı güvenilir vermiyor;
+   aynı yazı tipiyle ayrı bir span ölçmek kesin sonuç veriyor. */
+let _sloganRuler=null;
+function measureSloganWidth(txtEl){
+    if(!txtEl.textContent) return 0;
+    const cs=window.getComputedStyle(txtEl);
+    if(!_sloganRuler){
+        _sloganRuler=document.createElement('span');
+        _sloganRuler.setAttribute('aria-hidden','true');
+        _sloganRuler.style.cssText='position:absolute;left:-99999px;top:0;'
+            +'visibility:hidden;white-space:nowrap;pointer-events:none';
+        document.body.appendChild(_sloganRuler);
+    }
+    _sloganRuler.style.fontFamily=cs.fontFamily;
+    _sloganRuler.style.fontWeight=cs.fontWeight;
+    _sloganRuler.style.fontStyle=cs.fontStyle;
+    /* CSS geçişinin ara boyutu yerine hedef boyutu ölç. */
+    _sloganRuler.style.fontSize=txtEl.style.fontSize||cs.fontSize;
+    _sloganRuler.style.letterSpacing=cs.letterSpacing;
+    _sloganRuler.textContent=txtEl.textContent;
+    return _sloganRuler.getBoundingClientRect().width;
+}
+
+/* Metin kutuya sığmıyorsa yazı boyutunu daraltır.
+   Metin ve yazı tipi ATANDIKTAN SONRA çağrılmalı.
+
+   Sığmama tek bir aşamada oluyor: partner Bebas Neue'yi seçene kadar
+   önizleme Playfair Display ile çiziliyor ve o yazı tipi çok daha
+   geniş — en uzun slogan kutuyu taşırıp overflow:hidden ile kırpılıyordu.
+   Basılı billboard'un yazı tipi ve boyutuyla en uzun slogan (526 px)
+   560 px'lik kutuya sığdığı için FİNAL görünümde bu daraltma devreye
+   girmez; önizleme–billboard eşitliği bozulmuyor. */
+function fitSloganOverlay(txtEl){
+    if(!txtEl||!txtEl.dataset.boxw) return;
+    const boxW=parseFloat(txtEl.dataset.boxw);
+    const base=parseFloat(txtEl.style.fontSize);
+    if(!boxW||!base) return;
+    const w=measureSloganWidth(txtEl);
+    if(!w||w<=boxW) return;                 /* sığıyor — dokunma */
+    /* %2 pay: yuvarlama ve kerning farkları kenarı yalamasın */
+    txtEl.style.fontSize=Math.max(base*0.4,base*(boxW/w)*0.98)+'px';
+}
+
+function applyBillboardLayout(){
+    const img=document.getElementById('billboardImg');
+    const txt=document.getElementById('billboardText');
+    if(!img.complete||!img.naturalWidth){
+        img.addEventListener('load',applyBillboardLayout,{once:true});
+        return;
+    }
+    /* Önizlemeyle AYNI yerleştirici — ikisi birbirinden kayamaz */
+    if(!placeSloganOverlay(txt,img)) return;
+    if(ST.sloganFont) txt.style.fontFamily=ST.sloganFont;
+    txt.textContent=sloganDisplayText();
+    fitSloganOverlay(txt);
+    if(ST.sloganColor) txt.style.color=ST.sloganColor;
+    const blendB=blendForColor(ST.sloganColor);
+    txt.style.mixBlendMode=blendB;
+    txt.style.textShadow = blendB==='normal' ? '0 2px 10px rgba(0,0,0,0.5)' : '';
+}
+
+async function showBillboard(){
+    showScreen('billboardScreen');
+    const txt=document.getElementById('billboardText');
+    const img=document.getElementById('billboardImg');
+    txt.classList.remove('in');
+    ST._billboardShownAt=performance.now();
+
+    const slogan=(ST.slogan||'').trim();
+    const url=slogan?await resolveBillboard(slogan):null;
+    const fallback=!url;
+    ST.billboardFile=url||PREVIEW_BACKDROP;
+    ST.billboardFallbackUsed=fallback;
+
+    /* Basılı görselde metin zaten var — CSS katmanı gizlenir.
+       Yalnız fallback'te metni biz çiziyoruz. */
+    img.setAttribute('src',ST.billboardFile);
+    const reveal=function(){
+        if(fallback){applyBillboardLayout();txt.classList.add('in');}
+        else{txt.textContent='';txt.classList.remove('in');}
+        setTimeout(function(){
+            document.getElementById('billboardContinue').style.display='inline-block';
+        },1500);
+    };
+    /* Devam butonu HER KOŞULDA görünmeli. Yalnız 'load' beklenirse
+       görsel 404 verdiğinde ya da ağ yarıda kesildiğinde olay hiç gelmez
+       ve katılımcı butonsuz ekranda kalır. */
+    let _revealed=false;
+    const doReveal=function(){if(_revealed) return;_revealed=true;reveal()};
+    if(img.complete&&img.naturalWidth){setTimeout(doReveal,200)}
+    else{
+        img.addEventListener('load',function(){setTimeout(doReveal,200)},{once:true});
+        img.addEventListener('error',doReveal,{once:true});
+        setTimeout(doReveal,6000);          /* güvenlik ağı */
+    }
+
+    /* Kayıt #5 */
+    DataSync.save({
+        billboard_file:ST.billboardFile,
+        billboard_fallback_used:fallback
+    });
+    log('billboard:',ST.billboardFile,fallback?'(FALLBACK)':'');
+}
+window.addEventListener('resize',()=>{
+    if(document.getElementById('billboardScreen').classList.contains('active')){
+        applyBillboardLayout();
+    }
+});
+
+/* ============================================================
+ *  FEEDBACK — daha uzun, daha gerçekçi loading
+ * ============================================================ */
+async function startFeedback(){return showSurvey();}
+
+function skipFeedback(){ST._skipFeedback=true;}
+
+/* Test koşul seçicisi — sadece test amaçlı, deneyde kaldırılacak */
+function syncTestCondPicker(){
+    const srcSel=document.getElementById('condSrc');
+    const valSel=document.getElementById('condVal');
+    if(srcSel) srcSel.value=ST.feedbackSource;
+    if(valSel) valSel.value=ST.feedbackValence;
+}
+function applyTestCond(){/* Assigned conditions are immutable, including development sessions. */}
+
+/* ============================================================
+ *  SURVEY
+ * ============================================================ */
+/* Faillik maddeleri. Üçü de AYNI nesneyi (nihai billboard) hedefliyor;
+   ayrıştıkları şey kontrolün kime atfedildiği: ben / partner / birlikte.
+   Bu yüzden üçü de zorunlu ve ayrı sütunlarda saklanıyor. */
+const SURVEY_INTRO='Aşağıdaki ifadeleri daha önceki adımlarda size gösterilen tasarlanmış billboard’ı dikkate alarak yanıtlayınız.';
+const SURVEY_ANCHORS=['Kesinlikle Katılmıyorum','Kesinlikle Katılıyorum'];
+const SURVEY_QUESTIONS=[
+    {key:'self',   text:'Sonuçta ortaya çıkan billboard benim eserim.'},
+    {key:'partner',text:'Sonuçta ortaya çıkan billboard partnerimin eseri.'},
+    {key:'joint',  text:'Sonuçta ortaya çıkan billboard partnerimle ortak eserimiz.'}
+];
+function showSurvey(){
+    /* Kayıt #6 — geri bildirim metni ekranda ne kadar kaldı */
+    if(ST._feedbackShownAt){
+        DataSync.save({feedback_view_ms:Math.round(performance.now()-ST._feedbackShownAt)});
+    }
+    showScreen('surveyScreen');
+    const area=document.getElementById('surveyArea');
+    let html='<div class="survey-intro">'+SURVEY_INTRO+'</div>';
+    for(let q=1;q<=SURVEY_QUESTIONS.length;q++){
+        html+='<div class="survey-card"><div class="survey-q"><strong>Soru '+q+':</strong> '+SURVEY_QUESTIONS[q-1].text+'</div><div class="likert-row" id="likert'+q+'">';
+        for(let i=1;i<=7;i++) html+='<div class="likert-btn" onclick="selL('+q+','+i+')" id="lk'+q+'-'+i+'">'+i+'</div>';
+        html+='</div><div class="likert-labels"><span>'+SURVEY_ANCHORS[0]+'</span><span>'+SURVEY_ANCHORS[1]+'</span></div></div>';
+    }
+    html+='<button id="surveySubmit" class="btn" disabled onclick="submitSurvey()">Tamamla</button>';
+    area.innerHTML=html;
+    renderingRestore=true;try{SURVEY_QUESTIONS.forEach((it,i)=>{if(ST.survey['q'+(i+1)])selL(i+1,ST.survey['q'+(i+1)])});}finally{renderingRestore=false;}
+}
+function selL(q,v){ST.survey['q'+q]=v;DataSync.save({['dv_control_'+SURVEY_QUESTIONS[q-1].key]:v},true);for(let i=1;i<=7;i++)document.getElementById('lk'+q+'-'+i).classList.toggle('selected',i===v);const allAnswered=SURVEY_QUESTIONS.every((_,idx)=>ST.survey['q'+(idx+1)]);document.getElementById('surveySubmit').disabled=!allAnswered}
+function submitSurvey(){
+    if(_curScreen!=='surveyScreen'||!SURVEY_QUESTIONS.every((_,i)=>Number.isInteger(ST.survey['q'+(i+1)])&&ST.survey['q'+(i+1)]>=1&&ST.survey['q'+(i+1)]<=7))return;
+    /* Sütun adları maddenin ne ölçtüğünü söylüyor: dv_q1/dv_q2 eski
+       (farklı) maddelere aitti, aynı adı yeniden kullanmak analizde
+       iki ayrı ölçümü karıştırırdı. Değerler 1–7. */
+    const dv={};
+    SURVEY_QUESTIONS.forEach(function(item,idx){
+        dv['dv_control_'+item.key]=ST.survey['q'+(idx+1)];
+    });
+    DataSync.save(dv);
+    Progress.setStage('survey');
+    showNpi();
+}
+
+/* ============================================================
+ *  NPI — 16 gösterim: 15 içerik maddesi ve 8. sırada dikkat maddesi.
+ *  a/b puan anahtarı araştırmacının verdiği sürümle reliability.js içindedir.
+ *  Dikkat maddesi toplam puana eklenmez.
+ * ============================================================ */
+/* Dikkat kontrolü maddesinde doğru yanıt. Tek yerde tutuluyor ki
+   madde metniyle puanlama birbirinden kayamasın. */
+const NPI_ATTENTION_CORRECT='a';
+const NPI_ITEMS=[
+    {a:'İnsanlar bana iltifat ettiklerinde bazen utanırım.', b:'İyi biri olduğumu biliyorum, çünkü herkes böyle söyler.'},
+    {a:'Kalabalık içinde herkesten biri olmayı tercih ederim.', b:'İlgi merkezi olmayı severim.'},
+    {a:'Pek çok insandan ne daha iyi ne de daha kötüyüm.', b:'Özel biri olduğumu düşünüyorum.'},
+    {a:'İnsanlar üzerinde otorite kurmaktan hoşlanırım.', b:'Emirlere uymaktan rahatsız olmam.'},
+    {a:'İnsanları kolayca manipüle ederim.', b:'İnsanları manipüle ettiğimi fark ettiğimde rahatsız olurum.'},
+    {a:'Layık olduğum saygıyı elde etme konusunda ısrarcıyımdır.', b:'Hak ettiğim saygıyı genellikle görürüm.'},
+    {a:'Gösterişten kaçınırım.', b:'Genellikle fırsatını bulduğumda şov yaparım.'},
+    /* Dikkat kontrolü. Diğer maddelerle aynı formatta görünür; tek farkı
+       doğru yanıtın metinde açıkça yazması. npi_attention_pass bunu izler. */
+    /* B nötr bir çeldirici: iki seçenek de kendini işaretlemeyi söyleseydi
+       doğru yanıt belirsizleşir, dikkatli katılımcı da rastgele seçerdi. */
+    {a:'Bu maddede lütfen bu seçeneği işaretleyiniz.', b:'Hafta sonlarını dört gözle beklerim.', attention:true},
+    {a:'Bazen iyi hikaye anlatırım.', b:'Herkes hikayelerimi dinlemekten hoşlanır.'},
+    {a:'İnsanlardan çok şey beklerim.', b:'Başkaları için bir şeyler yapmaktan hoşlanırım.'},
+    {a:'İlgi merkezi olmaktan hoşlanırım.', b:'İlgi merkezi olmak beni rahatsız eder.'},
+    {a:'Otorite olmanın benim için pek bir anlamı yoktur.', b:'İnsanlar daima otoritemi kabul ediyor görünürler.'},
+    {a:'Önemli bir insan olacağım.', b:'Başarılı olmayı umuyorum.'},
+    {a:'İnsanlar söylediklerimin bazılarına inanır.', b:'İnsanları istediğim her şeye inandırabilirim.'},
+    {a:'Kendi kendime yeterim.', b:'Başkalarından öğrenebileceğim çok şey var.'},
+    {a:'Herkes gibi biriyim.', b:'Sıra dışı biriyim.'}
+];
+function showNpi(){
+    showScreen('npiScreen');
+    const area=document.getElementById('npiArea');
+    let html='';
+    NPI_ITEMS.forEach((it,idx)=>{
+        const n=idx+1;
+        html+='<div class="npi-card"><div class="npi-num">SORU '+n+'</div><div class="npi-options">';
+        html+='<div class="npi-opt" id="npi-'+n+'-a" onclick="selNpi('+n+',\'a\')"><div class="npi-radio"></div><div>'+it.a+'</div></div>';
+        html+='<div class="npi-opt" id="npi-'+n+'-b" onclick="selNpi('+n+',\'b\')"><div class="npi-radio"></div><div>'+it.b+'</div></div>';
+        html+='</div></div>';
+    });
+    area.innerHTML=html;
+    renderingRestore=true;try{NPI_ITEMS.forEach((it,i)=>{if(ST.npi['q'+(i+1)])selNpi(i+1,ST.npi['q'+(i+1)])});}finally{renderingRestore=false;}
+}
+function selNpi(q,choice){
+    if(!Number.isInteger(q)||q<1||q>NPI_ITEMS.length||!['a','b'].includes(choice))return;
+    ST.npi['q'+q]=choice;
+    const npiPatch={['npi_'+String(q).padStart(2,'0')]:choice,npi_attention_key_version:'npi-presented-v1-item08-a'};
+    if(NPI_ITEMS[q-1].attention)npiPatch.npi_attention_pass=choice===NPI_ATTENTION_CORRECT;
+    Object.assign(npiPatch,R.scoreNpi({...DataSync.record(),...npiPatch}));
+    DataSync.save(npiPatch,true);
+    document.getElementById('npi-'+q+'-a').classList.toggle('selected',choice==='a');
+    document.getElementById('npi-'+q+'-b').classList.toggle('selected',choice==='b');
+    const allAnswered=NPI_ITEMS.every((_,idx)=>ST.npi['q'+(idx+1)]);
+    document.getElementById('npiSubmit').disabled=!allAnswered;
+}
+function submitNpi(){
+    if(_curScreen!=='npiScreen'||!NPI_ITEMS.every((_,i)=>['a','b'].includes(ST.npi['q'+(i+1)])))return;
+    // Raw choices remain unchanged; score uses the researcher's versioned key.
+    const out={};
+    NPI_ITEMS.forEach(function(it,idx){
+        out['npi_'+String(idx+1).padStart(2,'0')]=ST.npi['q'+(idx+1)]||'';
+    });
+    const attnIdx=NPI_ITEMS.findIndex(function(it){return it.attention});
+    out.npi_attention_pass=(attnIdx!==-1)&&(ST.npi['q'+(attnIdx+1)]===NPI_ATTENTION_CORRECT);
+    Object.assign(out,R.scoreNpi(out));
+    DataSync.save(out);
+    /* Eskiden doğrudan debrief'e gidiliyordu; mcheck ekranı hiç
+       gösterilmiyordu (showMcheck ölü koddu). */
+    showMcheck();
+}
+
+/* ============================================================
+ *  MANIPULATION CHECK
+ * ============================================================ */
+function showMcheck(){
+    showScreen('mcheckScreen');
+    document.getElementById('mcheckArea').innerHTML='<div class="survey-card"><div class="survey-q">Birlikte çalıştığınız partner hakkında ne düşünüyorsunuz? Aklınızdan geçenleri kendi cümlelerinizla kısaca yazınız.</div><textarea class="open-ta" id="mcOpen" rows="4" maxlength="'+MC_OPEN_MAX+'" oninput="onMcOpen()" placeholder="Birkaç cümle yeterli…"></textarea><div class="open-meta" id="mcOpenMeta"><span></span><span id="mcOpenCount"></span></div></div>';
+    document.getElementById('mcOpen').value=ST.mcheck.open||'';
+    chkMcheck();ST._mcheckStart=performance.now();
+}
+
+/* Madde ZORUNLU ama uzunluk alt sınırı YOK: kısa da olsa katılımcının
+   kendi cevabı, uzunluk dayatmak uydurma metin ürettiriyor. */
+const MC_OPEN_MAX=1000;
+
+function onMcOpen(){
+    const ta=document.getElementById('mcOpen');
+    if(!ta) return;
+    ST.mcheck.open=ta.value;
+    DataSync.save({mcheck_open:ta.value},true);
+    const n=ta.value.trim().length;
+    const cnt=document.getElementById('mcOpenCount');
+    /* Sayaç yalnız üst sınıra yaklaşınca görünsün; boş alanda sayı
+       göstermek "belli bir uzunluk bekleniyor" izlenimi verirdi. */
+    if(cnt) cnt.textContent=n>MC_OPEN_MAX*0.8?n+' / '+MC_OPEN_MAX:'';
+    chkMcheck();
+}
+
+function chkMcheck(){
+    const done=(ST.mcheck.open||'').trim().length>0;
+    document.getElementById('mcheckSubmit').disabled=!done;
+}
+function submitMcheck(){
+    if(_curScreen!=='mcheckScreen'||typeof ST.mcheck.open!=='string'||!ST.mcheck.open.trim()||ST.mcheck.open.length>MC_OPEN_MAX)return;
+    const open=ST.mcheck.open;
+    DataSync.save({
+        mcheck_open:open,
+        mcheck_open_len:open.length,
+        mcheck_open_words:countWords(open),
+        mcheck_time_ms:Math.round(performance.now()-(ST._mcheckStart||performance.now()))
+    });
+    showDebrief();
+}
+
+function leaveBillboard(){
+    DataSync.save({billboard_view_ms:Math.round(performance.now()-(ST._billboardShownAt||performance.now()))});
+    showSurvey();
+}
+
+/* ============================================================
+ *  BİLGİLENDİRME (DEBRIEF)
+ * ============================================================ */
+function showDebrief(){
+    showScreen('debriefScreen');
+    DataSync.save({debrief_reached:true});
+}
+/* Veri çekme talebi gerçekten sunucuya yazılır; buton sadece görsel
+   bir jest değil. Katılımcıya yazıldığı teyit edilir. */
+async function requestWithdraw(){
+    const btn=document.getElementById('withdrawBtn');
+    const note=document.getElementById('withdrawNote');
+    btn.disabled=true;btn.textContent='Gönderiliyor…';
+    note.textContent='';note.style.color='';
+    sessionStore.update(s=>{s.intent='withdraw';});
+    DataSync.save({data_withdraw_requested:true,completed:false});
+    const ok=await DataSync.flush({noJitter:true});
+    if(ok&&DataSync.pending()===0){
+        note.style.color='var(--green)';
+        note.textContent='Bu önizlemede Google’a veri gönderilmedi. Verileriniz analize dahil edilmeyecek.';
+        btn.style.display='none';
+    }else{
+        note.style.color='var(--red)';
+        note.textContent='Talebiniz cihazınıza kaydedildi ancak sunucuya ulaşmadı. '
+            +'İnternete bağlanıp tekrar deneyebilir ya da aşağıdaki adresten bize yazabilirsiniz.';
+        btn.disabled=false;btn.textContent='Tekrar dene';
+    }
+}
+
+/* ============================================================
+ *  TAMAMLAMA — kayıtlar onay gelene kadar arka planda yeniden gönderilir
+ * ============================================================ */
+function showThank(){
+    if(_curScreen!=='debriefScreen'||state().terminal||state().intent==='withdraw')return;
+    Progress.markCompleted();
+    DataSync.save(Object.assign({
+        completion_intent:true,
+        total_duration_ms:Math.max(0,Date.now()-Date.parse(DataSync.record().session_start_iso||SESSION_START_ISO)),
+        screen_times:ST.screenTimes,
+        last_screen:'thankScreen'
+    },visibilityFields()));
+    showScreen('thankScreen');
+    DataSync.flush({noJitter:true});
+}
+function updateCompletionStatus(){
+    const screen=document.getElementById('thankScreen');
+    if(!screen||!screen.classList.contains('active'))return;
+    const confirmed=!!(state()&&state().terminal==='completed');
+    document.getElementById('completionTitle').textContent=confirmed?'Teşekkürler':'Lütfen bekleyiniz';
+    document.getElementById('completionStatus').classList.toggle('saving-warning',!confirmed);
+    document.getElementById('completionStatus').textContent=confirmed
+        ?'Önizleme tamamlandı. Google’a veri gönderilmedi. Bu sayfayı kapatabilirsiniz.'
+        :'Yanıtlarınız kaydediliyor. Lütfen bu sayfayı kapatmayınız.';
+    updateStudyProgress('thankScreen');
+}
+
+/* ============================================================
+ *  GELİŞTİRME ARAYÜZÜ
+ *  Tamamı JS ile üretilir; DEV_MODE=false iken tek bir düğüm bile
+ *  DOM'a girmez (display:none yeterli değil — kaynak incelenebilir).
+ * ============================================================ */
+function devBadgeText(){
+    const q=DataSync.pending();
+    const p=Progress.get();
+    return 'DEV · '+(ST.feedbackSource||'?')+'/'+(ST.feedbackValence||'?')
+         +'\npid: '+(DataSync.pid()||'—')
+         +'\nsync: '+DataSync.status()+(q?' ('+q+')':'')
+         +'\nstage: '+(p.stage||'—')+(p.resumedCount?' ↻'+p.resumedCount:'');
+}
+function devSkipVisible(){
+    return _curScreen==='partnerScreen'||_curScreen==='matchScreen'||_curScreen==='feedbackScreen';
+}
+function devSkip(){
+    if(_curScreen==='partnerScreen') return skipPartner();
+    if(_curScreen==='matchScreen') return skipMatching();
+    if(_curScreen==='feedbackScreen') return skipFeedback();
+}
+function refreshDevUI(){
+    if(!DEV_MODE) return;
+    const b=document.getElementById('devBadge');
+    if(b) b.textContent=devBadgeText();
+    const sk=document.getElementById('devSkipBtn');
+    if(sk) sk.style.display=devSkipVisible()?'inline-block':'none';
+    const cp=document.getElementById('condPicker');
+    if(cp){
+        const show=(_curScreen==='preFeedbackScreen'||_curScreen==='feedbackScreen');
+        cp.style.display=show?'flex':'none';
+        if(show){
+            const s=document.getElementById('condSrc'),v=document.getElementById('condVal');
+            if(s&&document.activeElement!==s) s.value=ST.feedbackSource;
+            if(v&&document.activeElement!==v) v.value=ST.feedbackValence;
+        }
+    }
+}
+function onScreenChangeDev(){refreshDevUI()}
+function buildDevUI(){
+    if(!DEV_MODE) return;
+
+    const badge=document.createElement('div');
+    badge.id='devBadge';
+    badge.style.cssText='position:fixed;top:6px;right:6px;z-index:9999;background:rgba(0,0,0,0.78);'
+        +'color:#fff;font:11px/1.35 Consolas,monospace;padding:5px 8px;border-radius:6px;'
+        +'white-space:pre-line;pointer-events:none;max-width:46vw';
+    document.body.appendChild(badge);
+
+    /* Rozetin hemen altında — aynı cihazda tekrar test edebilmek için */
+    const reset=document.createElement('button');
+    reset.id='devResetBtn';reset.type='button';
+    reset.textContent='Sıfırla';
+    reset.style.cssText='position:fixed;top:88px;right:6px;z-index:9999;background:rgba(0,0,0,0.78);'
+        +'color:#fff;font:11px Consolas,monospace;border:none;border-radius:6px;'
+        +'padding:8px 10px;min-height:32px';
+    reset.onclick=function(){resetLocalSession(true)};
+    document.body.appendChild(reset);
+
+    const skip=document.createElement('button');
+    skip.id='devSkipBtn';skip.type='button';
+    skip.className='btn btn-sm';
+    skip.textContent='[TEST] Geç';
+    skip.style.cssText='position:fixed;bottom:24px;left:24px;z-index:9999;background:#888;display:none';
+    skip.onclick=devSkip;
+    document.body.appendChild(skip);
+
+    const cp=document.createElement('div');
+    cp.id='condPicker';
+    cp.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;background:#fff;'
+        +'border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;'
+        +'box-shadow:0 4px 16px rgba(0,0,0,0.12);font-size:12px;display:none;'
+        +'flex-direction:column;gap:6px;min-width:180px';
+    cp.innerHTML='<div style="font-weight:700;color:var(--text3);letter-spacing:0.5px;font-size:10px;text-transform:uppercase">[TEST] Koşul Seçici</div>'
+        +'<div style="display:flex;gap:6px;align-items:center"><label style="min-width:48px">Kaynak:</label>'
+        +'<select id="condSrc" style="flex:1;padding:4px;font-size:12px"><option value="ai">AI</option><option value="human">İnsan</option></select></div>'
+        +'<div style="display:flex;gap:6px;align-items:center"><label style="min-width:48px">Değer:</label>'
+        +'<select id="condVal" style="flex:1;padding:4px;font-size:12px"><option value="positive">Olumlu</option><option value="negative">Olumsuz</option></select></div>';
+    document.body.appendChild(cp);
+    cp.querySelector('#condSrc').onchange=applyTestCond;
+    cp.querySelector('#condVal').onchange=applyTestCond;
+
+    /* Partner katmanı showScreen'den bağımsız açılıp kapandığı için
+       görünürlük olay yerine düşük frekanslı yoklama ile tazelenir. */
+    setInterval(refreshDevUI,500);
+    refreshDevUI();
+}
+
+/* ============================================================
+ *  DEVAM ETME
+ *
+ *  Duvar exp_pid'e değil exp_completed'a bakar: yalnızca deneyi
+ *  BİTİRMİŞ olan geri gelemez. Yarım kalmış oturum kaldığı yerden
+ *  sürer — mobil tarayıcılar sekmeyi kendiliğinden attığı için bu
+ *  istisna değil, beklenen durum.
+ *
+ *  Devamda sunucuya YENİ ATAMA İSTEĞİ GİTMEZ; koşul ve pid yerelden
+ *  geri yüklenir. Aksi halde katılımcı ikinci bir satır ve muhtemelen
+ *  farklı bir koşul alırdı.
+ * ============================================================ */
+/* Ekranı devraldıysa true döner — çağıran taze ziyaret mi anlasın diye. */
+
+/* ============================================================
+ *  BOOT
+ * ============================================================ */
+function dismissInappWarning(){showScreen('consentScreen')}
+
+/* Explicit navigation and cancellable stage scopes. Research timings remain in
+ * the original choreography; this module changes their clock, not duration. */
+const PHASE_CALLS=new Map();
+/* @audit-timing-hook */
+let criticalAssets=null,previewReady=false,fontState={};
+// Warm the browser's existing symbol-font fallback while the brand information
+// is being read. The same CSS fonts/glyphs remain in use; no canvas is displayed
+// or exported, and failure of this optional preparation cannot block the study.
+function prepareInterfaceGlyphs(){
+    try{
+        if(typeof CanvasRenderingContext2D==='undefined')return;
+        const ctx=document.createElement('canvas').getContext('2d');if(!ctx)return;
+        const fonts=new Set();
+        document.querySelectorAll('#undoBtn,#clearBtn,#sloganOnboard .onboard-note b').forEach(el=>{
+            const s=getComputedStyle(el),font=s.fontStyle+' '+s.fontWeight+' '+s.fontSize+' '+s.fontFamily;
+            if(!fonts.has(font)){fonts.add(font);ctx.font=font;ctx.measureText('↶ ✕');}
+        });
+    }catch(e){/* An optimization only; the original render path is unchanged. */}
+}
+function bounded(promise,ms){return Promise.race([promise,new Promise(resolve=>setTimeout(()=>resolve(null),ms))]);}
+function prepareCriticalAssets(){
+    if(criticalAssets)return criticalAssets;
+    criticalAssets=(async()=>{
+        const image=await loadImageBounded(PREVIEW_BACKDROP);
+        previewReady=!!image;
+        if(document.fonts){for(const face of ['400 24px "Bebas Neue"','700 24px "Oswald"','400 24px "Playfair Display"','700 24px "Playfair Display"','900 24px "Playfair Display"']){
+            let ok=false;for(let n=0;n<2&&!ok;n++){try{const loaded=await bounded(document.fonts.load(face,'İıĞğŞşÇçÖöÜü'),6000);ok=!!loaded&&loaded.length>0&&document.fonts.check(face,'İıĞğŞşÇçÖöÜü');}catch(e){}}
+            fontState[face]=ok;
+        }}else fontState.unsupported=false;
+        prepareInterfaceGlyphs();
+        return previewReady&&Object.values(fontState).every(Boolean);
+    })();return criticalAssets;
+}
+const NAV={consentScreen:['demoScreen','declineScreen'],demoScreen:['consentScreen','introScreen','minorScreen'],introScreen:['demoScreen','briefScreen'],briefScreen:['introScreen','matchScreen'],matchScreen:['instrScreen'],instrScreen:['sloganScreen'],sloganScreen:['partnerWaitScreen'],partnerWaitScreen:['sloganScreen','partnerScreen'],partnerScreen:['billboardScreen'],billboardScreen:['partnerWaitScreen','surveyScreen'],surveyScreen:['npiScreen'],npiScreen:['mcheckScreen'],mcheckScreen:['npiScreen','debriefScreen'],debriefScreen:['thankScreen']};
+let restoringScreen=false,phaseCursor=0,phaseReplayTo=0,phaseSeed=1,phaseRandomIndex=0;
+function seedRandom(){let x=phaseSeed+phaseRandomIndex++;x=Math.imul(x^(x>>>16),0x45d9f3b);x=Math.imul(x^(x>>>16),0x45d9f3b);return ((x^(x>>>16))>>>0)/4294967296;}
+// Preserves the original uniform ranges; restart can reconstruct the same path.
+rnd=function(min,max){return min+(phaseState?seedRandom():Math.random())*(max-min);};
+function phaseCover(on){let e=document.getElementById('phaseRecovery');if(!e){e=document.createElement('div');e.id='phaseRecovery';e.style.cssText='position:fixed;inset:0;background:#FAFAF8;z-index:10000;display:none;align-items:center;justify-content:center';e.textContent='Lütfen bekleyiniz';document.body.appendChild(e);}e.style.display=on?'flex':'none';}
+async function stageWait(ms){
+    const p=phaseState,signal=phaseController&&phaseController.signal;
+    if(!p)return R.visibleWait(ms,{document,now:()=>performance.now(),signal});
+    if(signal&&signal.aborted)throw Error('stage_cancelled');
+    const cursor=++phaseCursor;if(cursor<=phaseReplayTo)return;
+    const duration=p.step===cursor&&p.remaining_ms>0?p.remaining_ms:ms;
+    phaseCover(false);p.step=cursor;p.remaining_ms=duration;checkpoint();
+    const before=performance.now();let accounted=0,wallAccounted=0;
+    const persistRemaining=remaining=>{const consumed=duration-remaining,wall=performance.now()-before;p.visible_ms=(p.visible_ms||0)+Math.max(0,consumed-accounted);p.wall_ms=(p.wall_ms||0)+Math.max(0,wall-wallAccounted);accounted=consumed;wallAccounted=wall;p.remaining_ms=remaining;checkpoint();};
+    await R.visibleWait(duration,{document,now:()=>performance.now(),signal,onPause:persistRemaining});
+    if(signal&&signal.aborted)throw Error('stage_cancelled');
+    persistRemaining(0);p.completed_steps=cursor;p.remaining_ms=0;checkpoint();
+}
+function wrapPhase(name,screen,fn){return function(...args){
+    if(!isWriter||!state()||state().terminal)return Promise.resolve();
+    if(PHASE_CALLS.has(name))return PHASE_CALLS.get(name);
+    const context=currentContext();const previous=recoveredPhase||state().view.phase;recoveredPhase=null;
+    if(phaseController)phaseController.abort();const ctrl=new AbortController();phaseController=ctrl;
+    phaseState={name,screen,completed_steps:0,visible_ms:0,wall_ms:0,seed:Math.floor(Math.random()*0x7fffffff)};
+    if(previous&&previous.name===name){phaseState={...previous};phaseCover(true);DataSync.save({exposure_interrupted:true,exposure_uncertain:true,technical_valid:false},true);}
+    phaseCursor=0;phaseReplayTo=phaseState.completed_steps;phaseSeed=phaseState.seed;phaseRandomIndex=0;checkpoint();
+    const thisPhase=phaseState;
+    const promise=(async()=>{try{await fn(...args);if(contextValid(context)){DataSync.save({[name+'_visible_ms']:thisPhase.visible_ms,[name+'_wall_ms']:thisPhase.wall_ms},true);sessionStore.update(s=>{if(s.view.phase&&s.view.phase.name===name)s.view.phase=null;});}}
+        catch(e){if(e.message!=='stage_cancelled'&&!(e instanceof PartnerAborted)&&contextValid(context)){DataSync.save({technical_error:'stage_failure',technical_valid:false},true);technicalPause('stage_failure',()=>location.reload());}}
+        finally{if(phaseController===ctrl){phaseState=null;phaseController=null;}phaseCover(false);PHASE_CALLS.delete(name);}})();
+    PHASE_CALLS.set(name,promise);return promise;
+};}
+pwait=async function(ms){if(ST._skipPartner)throw new PartnerAborted();await stageWait(ms);if(ST._skipPartner)throw new PartnerAborted();};
+runMatching=wrapPhase('matching','matchScreen',runMatching);
+const originalRunPartner=runPartner;
+runPartner=wrapPhase('partner','partnerScreen',async function(){
+    const started=performance.now();phaseCover(true);const ready=await prepareCriticalAssets();phaseCover(false);
+    if(phaseController&&phaseController.signal.aborted)throw Error('stage_cancelled');
+    DataSync.save({font_status:fontState,font_load_failed:Object.values(fontState).some(v=>!v),preview_asset_failed:!previewReady,technical_wait_ms:(DataSync.record().technical_wait_ms||0)+Math.round(performance.now()-started),...(!ready?{technical_valid:false}:{})},true);
+    return originalRunPartner();
+});
+openPartnerStage=wrapPhase('partner_open','partnerWaitScreen',openPartnerStage);
+startFeedback=wrapPhase('feedback','feedbackScreen',startFeedback);
+const originalShowScreen=showScreen;
+showScreen=function(id){
+    if(!isWriter||!state())return false;
+    if(state().terminal&&!['expiredScreen','declineScreen','minorScreen','debriefScreen','thankScreen','alreadyScreen'].includes(id))return false;
+    if(!restoringScreen&&!renderingRestore&&_curScreen!==id&&NAV[_curScreen]&&!NAV[_curScreen].includes(id)&&!['expiredScreen','minorScreen','declineScreen','inappScreen'].includes(id))return false;
+    if(state().presented&&['introScreen','briefScreen','matchScreen','instrScreen','sloganScreen','partnerWaitScreen','partnerScreen','preFeedbackScreen'].includes(id))return false;
+    accountVisible();const changed=originalShowScreen(id);activeAt=performance.now();if(changed&&id==='briefScreen')prepareCriticalAssets();return changed;
+};
+const originalResume=resumeAtStage;
+resumeAtStage=function(stage,screen){restoringScreen=true;try{return originalResume(stage,screen);}finally{restoringScreen=false;}};
+function loadImageBounded(url,timeout=12000){return new Promise(resolve=>{
+    const img=new Image();let done=false;
+    const finish=ok=>{if(done)return;done=true;clearTimeout(timer);img.onload=img.onerror=null;resolve(ok?img:null);};
+    const timer=setTimeout(()=>finish(false),timeout);
+    img.onload=async()=>{try{if(img.decode)await img.decode();finish(img.naturalWidth>0);}catch(e){finish(false);}};
+    img.onerror=()=>finish(false);img.src=url;
+});}
+const assetCache=new Map();
+const originalMiniPreview=updateMiniPreview;
+updateMiniPreview=function(){originalMiniPreview();const el=document.getElementById('bbMiniText');if(el)el.style.visibility=previewReady&&Object.values(fontState).length>0&&Object.values(fontState).every(Boolean)?'visible':'hidden';};
+resolveBillboard=function(slogan){
+    const path=billboardCandidates(slogan)[0];
+    if(!assetCache.has(path)){const promise=loadImageBounded(path).then(img=>{if(!img)assetCache.delete(path);return img?path:null;});assetCache.set(path,promise);}
+    return assetCache.get(path);
+};
+let billboardRun=null;
+showBillboard=function(){
+    if(billboardRun)return billboardRun;const context=currentContext();
+    billboardRun=(async()=>{
+        if(!showScreen('billboardScreen')&&_curScreen!=='billboardScreen')return;
+        const img=document.getElementById('billboardImg'),text=document.getElementById('billboardText'),button=document.getElementById('billboardContinue');
+        billboardReady=false;button.style.display='none';text.textContent='';img.removeAttribute('src');const started=performance.now();
+        let url=await resolveBillboard(ST.slogan);if(!url&&contextValid(context))url=await resolveBillboard(ST.slogan);
+        if(!contextValid(context)||_curScreen!=='billboardScreen')return;
+        ST.billboardFile=url||'';ST.billboardFallbackUsed=false;
+        DataSync.save({billboard_file:url||'',billboard_fallback_used:false,billboard_presented:!!url,billboard_load_failed:!url,billboard_load_ms:Math.round(performance.now()-started),asset_version:ASSET_VERSION,...(!url?{technical_valid:false}:{})});
+        const caption=document.querySelector('#billboardScreen .billboard-caption');if(caption)caption.hidden=!url;
+        if(url){img.src=url;if(img.decode)try{await img.decode();}catch(e){DataSync.save({billboard_load_failed:true,billboard_presented:false,technical_valid:false},true);img.removeAttribute('src');url=null;}}
+        if(url){ST._billboardShownAt=performance.now();billboardReady=true;activeAt=performance.now();}
+        else{img.alt='Görsel yüklenemedi.';ST._billboardShownAt=null;}
+        await R.visibleWait(1500,{document,now:()=>performance.now()});
+        if(contextValid(context)&&_curScreen==='billboardScreen')button.style.display='inline-block';
+    })().finally(()=>{billboardRun=null;});return billboardRun;
+};
+// Attribute a hidden interval to the screen on which it began. Clock fields are
+// cumulative wall/visible times, never persisted performance.now() timestamps.
+let activeAt=performance.now(),lastVisible=!document.hidden,billboardReady=false;
+const activeTimes={};
+function accountVisible(){const now=performance.now();if(lastVisible&&(_curScreen!=='billboardScreen'||billboardReady))activeTimes[_curScreen]=(activeTimes[_curScreen]||0)+Math.max(0,now-activeAt);activeAt=now;lastVisible=!document.hidden;}
+document.addEventListener('visibilitychange',()=>{accountVisible();if(isWriter&&state()&&!state().terminal){DataSync.save({...visibilityFields(),screen_visible_ms:activeTimes,orientation_changes:TEL.orientation_changes},true);checkpoint();}});
+const oldLeave=leaveBillboard;
+leaveBillboard=function(){if(_curScreen!=='billboardScreen')return;accountVisible();DataSync.save({billboard_visible_ms:DataSync.record().billboard_presented?(activeTimes.billboardScreen||0):0},true);oldLeave();};
+// All answer selectors support keyboard activation without changing labels.
+function accessibleChoices(){document.querySelectorAll('.likert-btn,.npi-opt').forEach(el=>{if(el.hasAttribute('role'))return;el.setAttribute('role','button');el.tabIndex=0;el.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();el.click();}});});}
+new MutationObserver(accessibleChoices).observe(document.body,{childList:true,subtree:true});accessibleChoices();
+document.addEventListener('click',e=>{if(!isWriter){e.preventDefault();e.stopImmediatePropagation();return;}Progress.touch();},true);
+let reportingError=false;
+function reportUnexpected(){if(reportingError)return;reportingError=true;try{if(isWriter&&state()&&!state().terminal)DataSync.save({technical_error:'runtime',technical_valid:false},true);technicalPause('runtime',()=>location.reload());}finally{reportingError=false;}}
+window.addEventListener('error',reportUnexpected);window.addEventListener('unhandledrejection',reportUnexpected);
+window.addEventListener('pagehide',e=>{checkpoint();DataSync.beacon();if(!e.persisted){isWriter=false;if(syncEngine)syncEngine.stop();if(assignmentController)assignmentController.abort();if(phaseController)phaseController.abort();if(releaseWriter)releaseWriter();}});
+window.addEventListener('pageshow',e=>{if(e.persisted){DataSync.save({bfcache_return:true,exposure_uncertain:true},true);}});
+
+bootStudy();
+
+</script>
+</body>
+</html>
